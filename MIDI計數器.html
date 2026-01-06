@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI 音符計數器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Tone.js 的 Midi 解析庫 -->
+    <script src="https://unpkg.com/@tonejs/midi"></script>
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .drop-active {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
+        }
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 font-sans text-slate-800">
+
+    <div class="bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row min-h-[500px]">
+        
+        <!-- 左側：上傳區與總覽 -->
+        <div class="w-full md:w-2/5 p-8 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col">
+            <h1 class="text-2xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                <i data-lucide="music" class="w-6 h-6 text-blue-500"></i>
+                MIDI 計數器
+            </h1>
+            <p class="text-slate-500 text-sm mb-6">快速分析 MIDI 檔案的音符數量與結構</p>
+
+            <!-- 拖放區 -->
+            <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 hover:border-blue-400 hover:bg-slate-50 flex-grow max-h-64 relative group">
+                <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".mid,.midi">
+                <div class="pointer-events-none flex flex-col items-center transition-transform group-hover:scale-105 duration-300">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+                    </div>
+                    <p class="font-medium text-slate-700">點擊或拖放 MIDI 檔案</p>
+                    <p class="text-xs text-slate-400 mt-2">支援 .mid 與 .midi 格式</p>
+                </div>
+            </div>
+
+            <!-- 錯誤訊息 -->
+            <div id="error-message" class="hidden mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                <span>檔案格式錯誤</span>
+            </div>
+
+            <!-- 檔案名稱顯示 -->
+            <div id="file-info" class="hidden mt-6 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">已分析檔案</div>
+                <div id="file-name" class="font-medium text-slate-800 truncate">filename.mid</div>
+            </div>
+        </div>
+
+        <!-- 右側：詳細數據 -->
+        <div class="w-full md:w-3/5 p-8 bg-white relative">
+            
+            <!-- 初始狀態 -->
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-300 p-8 text-center">
+                <i data-lucide="bar-chart-2" class="w-16 h-16 mb-4 opacity-50"></i>
+                <p>請上傳檔案以查看分析結果</p>
+            </div>
+
+            <!-- 結果顯示區 -->
+            <div id="results-area" class="hidden h-full flex flex-col">
+                
+                <!-- 核心指標卡片 -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <div class="text-blue-600 text-sm font-medium mb-1 flex items-center gap-1">
+                            <i data-lucide="music-4" class="w-4 h-4"></i> 總音符數
+                        </div>
+                        <div id="total-notes" class="text-3xl font-bold text-slate-800">0</div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div class="text-slate-500 text-sm font-medium mb-1 flex items-center gap-1">
+                            <i data-lucide="clock" class="w-4 h-4"></i> 總時長
+                        </div>
+                        <div id="duration" class="text-2xl font-bold text-slate-800">0s</div>
+                    </div>
+                </div>
+
+                <!-- 次要資訊 -->
+                <div class="flex gap-6 text-sm text-slate-500 mb-6 px-1">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="activity" class="w-4 h-4"></i>
+                        <span id="bpm-display">BPM: -</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="hash" class="w-4 h-4"></i>
+                        <span id="signature-display">拍號: -</span>
+                    </div>
+                </div>
+
+                <!-- 軌道列表 -->
+                <div class="flex-grow overflow-hidden flex flex-col">
+                    <h3 class="text-sm font-semibold text-slate-700 mb-3 flex justify-between items-center">
+                        軌道詳情
+                        <span class="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-1 rounded-full" id="track-count">0 軌</span>
+                    </h3>
+                    <div class="overflow-y-auto pr-2 flex-grow">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-50 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-3 py-2 rounded-l-lg">軌道 / 樂器</th>
+                                    <th class="px-3 py-2 text-right rounded-r-lg">音符數</th>
+                                </tr>
+                            </thead>
+                            <tbody id="track-list" class="divide-y divide-slate-100">
+                                <!-- JS 將在此處插入內容 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化 Icons
+        lucide.createIcons();
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const errorMessage = document.getElementById('error-message');
+        const emptyState = document.getElementById('empty-state');
+        const resultsArea = document.getElementById('results-area');
+        const fileNameDisplay = document.getElementById('file-name');
+        const fileInfoDiv = document.getElementById('file-info');
+
+        // 拖放效果
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-active'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-active'), false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files: files } });
+        }
+
+        function handleFiles(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 基本驗證
+            if (!file.name.toLowerCase().endsWith('.mid') && !file.name.toLowerCase().endsWith('.midi') && file.type !== 'audio/midi') {
+                showError('請上傳有效的 .mid 或 .midi 檔案');
+                return;
+            }
+
+            hideError();
+            fileNameDisplay.textContent = file.name;
+            fileInfoDiv.classList.remove('hidden');
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    // 使用 Tonejs/Midi 解析 ArrayBuffer
+                    const midiData = new Midi(e.target.result);
+                    displayResults(midiData);
+                } catch (err) {
+                    console.error(err);
+                    showError('無法解析此 MIDI 檔案，檔案可能已損壞。');
+                }
+            };
+
+            reader.onerror = function() {
+                showError('讀取檔案時發生錯誤。');
+            }
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayResults(midi) {
+            // 切換視圖
+            emptyState.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+            resultsArea.classList.add('animate-fade-in');
+
+            // 1. 計算總音符數
+            let totalNotes = 0;
+            midi.tracks.forEach(track => {
+                totalNotes += track.notes.length;
+            });
+
+            // 2. 顯示核心數據
+            animateValue(document.getElementById('total-notes'), 0, totalNotes, 1000);
+            
+            // 時間格式化 (秒)
+            const duration = Math.round(midi.duration);
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            document.getElementById('duration').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')} (${duration}s)`;
+
+            // BPM 和 拍號
+            // 如果 MIDI header 沒有 tempos，通常預設 120
+            const bpm = midi.header.tempos.length > 0 ? Math.round(midi.header.tempos[0].bpm) : 120;
+            document.getElementById('bpm-display').textContent = `BPM: ${bpm}`;
+
+            const timeSignature = midi.header.timeSignatures.length > 0 
+                ? `${midi.header.timeSignatures[0].timeSignature[0]}/${midi.header.timeSignatures[0].timeSignature[1]}` 
+                : '4/4';
+            document.getElementById('signature-display').textContent = `拍號: ${timeSignature}`;
+
+            // 3. 渲染軌道列表
+            const trackList = document.getElementById('track-list');
+            trackList.innerHTML = '';
+
+            let visibleTracks = 0;
+
+            midi.tracks.forEach((track, index) => {
+                // 如果軌道沒有音符，則直接略過不顯示
+                if (track.notes.length === 0) return;
+                
+                visibleTracks++;
+                const hasNotes = true;
+                
+                const tr = document.createElement('tr');
+                tr.className = 'group hover:bg-slate-50 transition-colors';
+                
+                // 嘗試獲取樂器名稱
+                let instrumentName = track.instrument.name || `Instrument ${track.instrument.number}`;
+                if (track.percussion) instrumentName = "Percussion (打擊樂)";
+                
+                // 嘗試獲取軌道名稱 (有些 MIDI 沒寫)
+                // 這裡保留原始的 index + 1，方便使用者對照原始檔案的軌道編號
+                const trackName = track.name || `Track ${index + 1}`;
+
+                tr.innerHTML = `
+                    <td class="px-3 py-3">
+                        <div class="font-medium text-slate-700">${trackName}</div>
+                        <div class="text-xs text-slate-400 flex items-center gap-1">
+                            <i data-lucide="${track.percussion ? 'drum' : 'piano'}" class="w-3 h-3"></i>
+                            ${instrumentName}
+                        </div>
+                    </td>
+                    <td class="px-3 py-3 text-right">
+                        <span class="inline-block px-2 py-1 rounded-md text-xs font-bold bg-blue-100 text-blue-600">
+                            ${track.notes.length}
+                        </span>
+                    </td>
+                `;
+                trackList.appendChild(tr);
+            });
+            
+            // 更新軌道數量顯示 (顯示 有音符軌道數 / 總軌道數)
+            document.getElementById('track-count').textContent = `${visibleTracks} 軌 (共 ${midi.tracks.length})`;
+            
+            // 重新初始化新插入元素的 icons
+            lucide.createIcons();
+        }
+
+        function showError(msg) {
+            errorMessage.querySelector('span').textContent = msg;
+            errorMessage.classList.remove('hidden');
+            fileInfoDiv.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            resultsArea.classList.add('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        // 數字跑動動畫
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+    </script>
+</body>
+</html>
