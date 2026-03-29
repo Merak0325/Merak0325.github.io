@@ -1,0 +1,3291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天璇的星光派對籌備之旅</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            /* 加入全局變數，方便動態控制字體縮放，預設為 1.15 倍 */
+            --board-font-scale: 1.15;
+        }
+
+        /* 宇宙星空背景風格 */
+        body {
+            background-color: #0f0c29;
+            background-image: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 確保遊戲畫面嚴格遵守 16:9 比例 */
+        .game-ratio-container {
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            max-width: 177vh;
+            max-height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(123, 97, 255, 0.6);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            z-index: 10;
+        }
+
+        /* 8x8 網格系統 */
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 96%;
+            height: 96%;
+            gap: 4px;
+            position: relative;
+        }
+
+        /* 格子基礎樣式 */
+        .cell {
+            background: rgba(45, 27, 84, 0.7);
+            border: 1px solid rgba(167, 139, 250, 0.4);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        /* 特殊格子樣式 */
+        .cell.corner {
+            background: rgba(91, 33, 182, 0.8);
+            border: 2px solid #fbbf24;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .cell.start-cell {
+            background: rgba(6, 95, 70, 0.8);
+            border: 3px solid #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+        }
+
+        .cell.goal-cell {
+            background: rgba(159, 18, 57, 0.8);
+            border: 3px solid #f43f5e;
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.6);
+        }
+
+        .cell.card-cell {
+            background: rgba(180, 83, 9, 0.8);
+            border: 1px dashed #fbbf24;
+        }
+
+        .corner-badge {
+            position: absolute;
+            top: -12px;
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 900;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            letter-spacing: 1px;
+        }
+
+        .start-badge {
+            background: #059669;
+            border: 1px solid #34d399;
+        }
+
+        .goal-badge {
+            background: #e11d48;
+            border: 1px solid #fb7185;
+        }
+
+        /* 休園關閉特效 */
+        .closed-park {
+            filter: grayscale(80%) brightness(0.4);
+            border-color: #4b5563 !important;
+        }
+
+        /* 動態控制 Emoji 與名稱的大小 */
+        .cell-icon {
+            font-size: calc(2.25rem * var(--board-font-scale));
+            /* 基礎約 36px */
+            margin-bottom: 2px;
+            transition: font-size 0.2s;
+        }
+
+        .cell-text {
+            font-size: calc(0.95rem * var(--board-font-scale));
+            /* 基礎約 15px */
+            font-weight: 700;
+            letter-spacing: 0.025em;
+            line-height: 1.1;
+            transition: font-size 0.2s;
+        }
+
+        /* 玩家：大球 */
+        #player-token {
+            position: absolute;
+            width: 4.5vw;
+            height: 4.5vw;
+            max-width: 55px;
+            max-height: 55px;
+            background-color: #fcd34d;
+            border-radius: 50%;
+            z-index: 50;
+            transition: transform 0.4s ease-in-out;
+            box-shadow: 0 0 15px #fcd34d, inset -5px -5px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: url('./img/big_ball.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* 休息 Buff 發光特效 */
+        .buff-glow {
+            box-shadow: 0 0 25px #ec4899, inset -5px -5px 10px rgba(0, 0, 0, 0.3) !important;
+            border: 2px solid #fbcfe8;
+        }
+
+        /* 中間儀表板 */
+        .center-dashboard {
+            grid-column: 2 / 8;
+            grid-row: 2 / 8;
+            background: rgba(15, 12, 41, 0.6);
+            border-radius: 16px;
+            margin: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 彈出視窗進場動畫 */
+        @keyframes modalPop {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-animate {
+            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* 實況主控制面板 (側邊隱藏式) */
+        #streamer-panel {
+            position: fixed;
+            right: -320px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 320px;
+            height: 95vh;
+            background: rgba(17, 24, 39, 0.95);
+            border: 2px solid #6366f1;
+            border-right: none;
+            border-radius: 16px 0 0 16px;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+            transition: right 0.3s ease;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        #streamer-panel.open {
+            right: 0;
+        }
+
+        #panel-toggle {
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 80px;
+            background: #6366f1;
+            border-radius: 8px 0 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .panel-inner-scroll {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(17, 24, 39, 1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen p-4 bg-black/40">
+
+    <div id="main-menu"
+        class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+        <div
+            class="bg-gray-900 border-2 border-indigo-500 rounded-2xl shadow-[0_0_40px_rgba(99,102,241,0.6)] p-8 md:p-12 flex flex-col items-center w-11/12 max-w-lg relative modal-animate">
+            <div class="text-6xl mb-4 drop-shadow-xl animate-bounce">✨</div>
+            <h1
+                class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-6 text-center tracking-wide drop-shadow-lg">
+                天璇的星光派對籌備之旅<br><span class="text-2xl text-indigo-300 mt-2 inline-block">遊戲設定</span></h1>
+
+            <div class="w-full mb-5">
+                <label class="block text-indigo-300 font-bold mb-2 text-lg">💰 初始星光碎片 (難度)</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="MainMenu.setInitial(1000, this)"
+                        class="menu-btn-initial bg-indigo-600 border-2 border-indigo-400 text-white font-bold py-3 rounded-lg shadow-[0_0_10px_rgba(99,102,241,0.5)] transition">1,000</button>
+                    <button onclick="MainMenu.setInitial(2000, this)"
+                        class="menu-btn-initial bg-gray-700 border-2 border-gray-600 hover:border-indigo-400 text-gray-300 font-bold py-3 rounded-lg transition">2,000</button>
+                    <button onclick="MainMenu.setInitial(4000, this)"
+                        class="menu-btn-initial bg-gray-700 border-2 border-gray-600 hover:border-indigo-400 text-gray-300 font-bold py-3 rounded-lg transition">4,000</button>
+                </div>
+            </div>
+
+            <div class="w-full mb-8">
+                <label class="block text-pink-300 font-bold mb-2 text-lg">🏆 目標金額 (長度)</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="MainMenu.setTarget(25000, this)"
+                        class="menu-btn-target bg-gray-700 border-2 border-gray-600 hover:border-pink-400 text-gray-300 font-bold py-3 rounded-lg transition">25,000</button>
+                    <button onclick="MainMenu.setTarget(50000, this)"
+                        class="menu-btn-target bg-gray-700 border-2 border-gray-600 hover:border-pink-400 text-gray-300 font-bold py-3 rounded-lg transition">50,000</button>
+                    <button onclick="MainMenu.setTarget(100000, this)"
+                        class="menu-btn-target bg-pink-600 border-2 border-pink-400 text-white font-bold py-3 rounded-lg shadow-[0_0_10px_rgba(236,72,153,0.5)] transition">100,000</button>
+                </div>
+            </div>
+
+            <button onclick="MainMenu.startGame()"
+                class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-extrabold py-4 rounded-xl shadow-lg transform transition hover:-translate-y-1 text-2xl border-2 border-purple-400/50 flex justify-center items-center">
+                🚀 開始籌備派對！
+            </button>
+        </div>
+    </div>
+    <!-- 全局 Tooltip 元件 -->
+    <div id="global-tooltip"
+        class="fixed hidden bg-black/95 text-gray-200 text-sm leading-relaxed p-3 rounded-xl border border-gray-500 z-[100] max-w-[220px] shadow-xl pointer-events-none transform -translate-x-full -translate-y-1/2">
+    </div>
+
+    <!-- 遊戲主畫面 (滿版 16:9) -->
+    <div class="game-ratio-container" id="game-canvas">
+        <div class="board-grid" id="board">
+            <div id="player-token"></div>
+
+            <div class="center-dashboard flex flex-col items-center relative">
+
+                <!-- 觀眾互動規則面板 (放置於網格左上方) -->
+                <div
+                    class="absolute left-4 top-4 bg-slate-900/80 p-4 xl:p-6 rounded-2xl border border-indigo-400/40 shadow-[0_0_20px_rgba(99,102,241,0.3)] z-20 w-[28%] max-w-80 backdrop-blur-md pointer-events-none transition-all hidden xl:block overflow-y-auto max-h-[85%]">
+                    <h3
+                        class="text-indigo-300 font-extrabold text-lg xl:text-2xl mb-4 border-b border-indigo-500/50 pb-3 flex items-center">
+                        <span class="mr-3 text-2xl xl:text-3xl">📺</span> 觀眾互動規則
+                    </h3>
+                    <ul class="space-y-3 xl:space-y-5">
+                        <li class="flex flex-col">
+                            <div class="flex items-center mb-1.5">
+                                <span class="text-green-400 mr-2 text-xl xl:text-2xl">📝</span>
+                                <strong class="text-green-400 text-base xl:text-lg tracking-wide">聊天室簽到</strong>
+                            </div>
+                            <div class="pl-8 text-gray-200 text-sm xl:text-base leading-relaxed">
+                                實況主為您登錄簽到，大球即可獲得 <span class="text-yellow-400 font-bold">+50 碎片</span>！<br>
+                                <span class="text-gray-400 text-xs xl:text-sm mt-1 inline-block">(※ 每位伴星限領一次)</span>
+                            </div>
+                        </li>
+                        <li class="flex flex-col">
+                            <div class="flex items-center mb-1.5">
+                                <span class="text-pink-400 mr-2 text-xl xl:text-2xl">💎</span>
+                                <strong class="text-pink-400 text-base xl:text-lg tracking-wide">贊助抖內 (NT$50+)</strong>
+                            </div>
+                            <div class="pl-8 text-gray-200 text-sm xl:text-base leading-relaxed">
+                                化身宇宙引力！幫助大球趨吉避凶，可直接 <span class="text-pink-300 font-bold">指定大球下一步的點數 (1~6)</span>！<br>
+                                <span class="text-gray-400 text-xs xl:text-sm mt-1 inline-block">(※ 每位伴星限控骰 2 次，第 3
+                                    次為純支持無效果)</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 🎒 新增：道具背包面板 (放置於網格右上方) -->
+                <div
+                    class="absolute right-4 top-4 bg-slate-900/80 p-4 xl:p-5 rounded-2xl border border-yellow-500/40 shadow-[0_0_20px_rgba(234,179,8,0.2)] z-20 w-[25%] max-w-64 backdrop-blur-md transition-all hidden lg:block max-h-[85%] flex flex-col">
+                    <h3
+                        class="text-yellow-300 font-extrabold text-lg xl:text-xl mb-3 border-b border-yellow-500/50 pb-2 flex items-center justify-center">
+                        <span class="mr-2 text-xl xl:text-2xl">🎒</span> 道具背包
+                    </h3>
+                    <div id="inventory-container" class="flex flex-col space-y-2 mt-2 flex-grow overflow-y-auto pr-1">
+                        <p class="text-gray-400 text-sm text-center py-4">背包空空如也</p>
+                    </div>
+                </div>
+
+                <h1
+                    class="text-2xl md:text-3xl xl:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-1 tracking-wide text-center leading-snug drop-shadow-lg z-10">
+                    天璇的星光派對<br>籌備之旅</h1>
+
+                <div
+                    class="bg-indigo-900/70 p-3 lg:p-5 rounded-xl border border-indigo-400 w-full max-w-xs md:max-w-sm xl:max-w-lg mt-2 lg:mt-3 shadow-[0_0_15px_rgba(99,102,241,0.5)] z-10">
+                    <div class="flex justify-between items-center mb-2 lg:mb-3">
+                        <span class="text-indigo-200 text-base lg:text-lg">目標額度：</span>
+                        <span class="text-yellow-400 font-bold text-lg lg:text-xl" id="ui-target">100,000</span>
+                    </div>
+                    <div class="h-px bg-indigo-500/50 my-2 lg:my-3"></div>
+                    <div class="flex justify-between items-center my-1 text-base lg:text-lg">
+                        <span class="text-white">手邊星光碎片：</span>
+                        <span class="text-white font-mono" id="ui-hand">1,000</span>
+                    </div>
+                    <div class="flex justify-between items-center my-1 text-base lg:text-lg">
+                        <span class="text-white">銀行定存：</span>
+                        <span class="text-white font-mono" id="ui-bank">0</span>
+                    </div>
+                    <div class="flex justify-between items-center my-1 text-base lg:text-lg">
+                        <span class="text-white">投資現值：</span>
+                        <span class="text-white font-mono" id="ui-invest">0</span>
+                    </div>
+                    <div class="h-px bg-indigo-500/50 my-2 lg:my-3"></div>
+                    <div class="flex justify-between items-center text-xl lg:text-2xl mt-2">
+                        <span class="text-pink-300 font-bold">總資產：</span>
+                        <span class="text-yellow-300 font-bold font-mono" id="ui-total">1,000</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 lg:mt-5 w-full max-w-xs md:max-w-sm xl:max-w-lg z-10 relative">
+                    <div id="buff-indicator"
+                        class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-pink-300 text-sm font-bold hidden animate-bounce">
+                        ✨ 星輝斑斕狀態中 ✨
+                    </div>
+                    <button onclick="GameLogic.rollDice()"
+                        class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold py-2 lg:py-4 px-4 lg:px-6 rounded-xl shadow-lg transform transition hover:-translate-y-1 active:scale-95 flex items-center justify-center text-xl lg:text-2xl border-2 border-purple-400/50">
+                        <span class="text-2xl lg:text-4xl mr-3">🎲</span> 擲骰子出發
+                    </button>
+                </div>
+
+                <div class="mt-2 lg:mt-4 w-full max-w-xs md:max-w-sm xl:max-w-lg bg-black/60 p-2 lg:p-4 rounded-lg border border-gray-600 h-24 lg:h-40 overflow-y-auto flex flex-col z-10"
+                    id="event-log-container">
+                    <div id="log-spacer" class="flex-grow"></div>
+                    <p class="text-gray-400 text-xs lg:text-sm text-center" id="event-log-placeholder">等待大球擲骰子出發...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 實況主控制面板 (不在 16:9 畫面內) -->
+    <div id="streamer-panel">
+        <div id="panel-toggle" onclick="togglePanel()">⚙️</div>
+
+        <!-- 內層捲動容器 -->
+        <div class="panel-inner-scroll">
+            <h3 class="text-xl font-bold text-indigo-400 mb-4 border-b border-indigo-500 pb-2">實況主控制面板</h3>
+
+            <!-- 📺 觀眾互動連動區 -->
+            <div
+                class="mb-5 bg-gray-800 p-3 rounded-lg border border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.2)]">
+                <h4 class="text-sm font-bold text-pink-400 mb-3 flex items-center"><span>📺 觀眾互動連動區</span></h4>
+
+                <!-- Sign In -->
+                <div class="mb-4">
+                    <label class="block text-xs text-gray-300 mb-1">📝 觀眾簽到 (+50 碎片)</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="signin-name"
+                            class="w-full px-2 py-1.5 bg-gray-900 text-white border border-gray-600 rounded text-sm focus:border-green-400 focus:outline-none"
+                            placeholder="輸入觀眾 ID">
+                        <button onclick="GameLogic.signInAudience()"
+                            class="bg-green-600 hover:bg-green-500 px-4 py-1.5 rounded text-white text-sm whitespace-nowrap transition shadow">簽到</button>
+                    </div>
+                </div>
+
+                <!-- Donation -->
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1">💎 抖內指定步數 (NT$50+)</label>
+                    <div class="flex space-x-2 mb-2">
+                        <input type="text" id="donate-name"
+                            class="w-full px-2 py-1.5 bg-gray-900 text-white border border-gray-600 rounded text-sm focus:border-pink-400 focus:outline-none"
+                            placeholder="輸入贊助者 ID">
+                        <input type="number" id="donate-amount" min="50" step="10"
+                            class="w-20 px-2 py-1.5 bg-gray-900 text-white border border-gray-600 rounded text-sm text-center focus:border-pink-400 focus:outline-none"
+                            placeholder="金額">
+                        <input type="number" id="donate-dice" min="1" max="6"
+                            class="w-16 px-2 py-1.5 bg-gray-900 text-white border border-gray-600 rounded text-sm text-center focus:border-pink-400 focus:outline-none"
+                            placeholder="點數">
+                    </div>
+                    <button onclick="GameLogic.processDonation()"
+                        class="w-full bg-pink-600 hover:bg-pink-500 py-2 rounded text-white text-sm font-bold transition shadow-[0_0_10px_rgba(219,39,119,0.5)]">執行抖內指定骰子</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs text-gray-400 mb-1">🔍 網格字體大小縮放</label>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-gray-400">小</span>
+                    <input type="range" min="0.8" max="1.5" step="0.05" value="1.15" class="w-full"
+                        oninput="Renderer.updateFontScale(this.value)">
+                    <span class="text-xs text-gray-400">大</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 彈出視窗 (Modal) UI -->
+    <div id="modal-overlay"
+        class="fixed inset-0 z-[60] hidden flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+        <div
+            class="bg-gray-900 border-2 border-purple-500 rounded-2xl shadow-[0_0_40px_rgba(168,85,247,0.5)] p-8 flex flex-col items-center modal-animate relative transition-all duration-300">
+            <div id="modal-icon" class="text-7xl mb-4 drop-shadow-xl">✨</div>
+            <h2 id="modal-title" class="text-3xl font-bold text-white mb-3 text-center tracking-wider drop-shadow-md">標題
+            </h2>
+            <div id="modal-desc" class="text-center w-full mb-6 text-gray-200 leading-relaxed text-lg">
+                描述內容
+            </div>
+            <div id="modal-actions" class="w-full flex justify-center">
+                <!-- 互動按鈕 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePanel() {
+            const panel = document.getElementById('streamer-panel');
+            const toggle = document.getElementById('panel-toggle');
+            panel.classList.toggle('open');
+            toggle.innerText = panel.classList.contains('open') ? '▶' : '⚙️';
+        }
+
+        /**
+         * 模組 1：資料狀態 (State)、道具庫與事件題庫
+         */
+        const MAP_SIZE = 28;
+
+        // --- 道具圖鑑資料庫 ---
+        const ItemDatabase = {
+            'magic_dice': {
+                name: '特級骰子',
+                icon: '🎲',
+                desc: '點擊使用！可直接指定大球下一步擲出 1~6 點。',
+                action: () => GameLogic.useMagicDice()
+            },
+            'candy': {
+                name: '星光糖果',
+                icon: '🍬',
+                desc: '散發著甜甜星光能量的糖果。聽說銀河某處的雙胞胎似乎很喜歡？',
+                action: null // 被動道具
+            },
+            'hercules_medal': {
+                name: '海克力士勳章',
+                icon: '🏅',
+                desc: '武仙座核發的無上榮耀證明，散發出金碧輝煌的皇家光芒。',
+                action: null // 被動道具
+            },
+            'whistle': {
+                name: '紀念哨子',
+                icon: '🪈',
+                desc: '由仙女座交通隊長贈送，大球指揮交通的紀念品。',
+                action: null // 被動道具
+            },
+            'scholar_medal': {
+                name: '年度學者勳章',
+                icon: '🎖️',
+                desc: '銀河科技年會頒發的最高榮譽，證明了大球在星際科技領域的頂尖實力！',
+                action: null // 被動道具
+            }
+        };
+
+        const GameState = {
+            currentTurn: 1,
+            playerPos: 0,
+            isMoving: false,
+            passedStart: false,
+            pendingBankModal: false,
+            pendingPulsarModal: false, // 脈衝星壞結局排程通知
+            currentSolarOptions: [],
+            nextFixedDice: null,
+            status: {
+                rested: false,
+                doubleDice: false,
+                sickUntil: 0,
+                cheeseUntil: 0,
+                parkOpenAt: 0
+            },
+            stats: {
+                totalRolls: 0,
+                totalLoops: 0
+            },
+            mapAttachments: [],
+            chanceState: {
+                completedBasic: 0,
+                completedAdvanced: 0,
+                usedCardIds: []
+            },
+            fateState: {
+                usedCardIds: []
+            },
+            assets: {
+                hand: 2000,
+                bank: 0,
+                invest: 0,
+                target: 100000
+            },
+            interaction: {
+                signedInUsers: [],
+                donatedUsers: {}
+            },
+            storyProgress: {},
+            inventory: {},
+            flags: {
+                virgoQuizActive: false, // 處女座debug答題狀態
+                pulsarEnergy: 5,        // 黑寡婦脈衝星伴星能量
+                pulsarBadEnding: false, // 脈衝星壞結局標記
+                pulsarGoodEnding: false, // 脈衝星好結局標記
+                rewardedPulsar: false,  // 是否已發放脈衝星獎勵
+                rewardedCancer: false,  // 是否已發放巨蟹座獎勵
+                rewardedVega: false,    // 是否已發放織女星獎勵
+                rewardedGemini: false   // 是否已發放雙子座獎勵
+            }
+        };
+
+        // 地圖資料庫
+        const MapData = [
+            { id: 0, name: "大熊座", type: "start", col: 1, row: 1, icon: "🐻" },
+            { id: 1, name: "獅子座", type: "event", col: 2, row: 1, icon: "♌" },
+            { id: 2, name: "創生之柱", type: "event", col: 3, row: 1, icon: "🍼" },
+            { id: 3, name: "機會", type: "card", col: 4, row: 1, icon: "❓" },
+            { id: 4, name: "織女星", type: "event", col: 5, row: 1, icon: "🌟" },
+            { id: 5, name: "水瓶座", type: "event", col: 6, row: 1, icon: "♒" },
+            { id: 6, name: "命運", type: "card", col: 7, row: 1, icon: "📜" },
+
+            { id: 7, name: "蟲洞躍遷點", type: "corner", col: 8, row: 1, icon: "🌀" },
+            { id: 8, name: "天秤座", type: "event", col: 8, row: 2, icon: "♎" },
+            { id: 9, name: "仙女座星系", type: "event", col: 8, row: 3, icon: "🌌" },
+            { id: 10, name: "巨蟹座", type: "event", col: 8, row: 4, icon: "♋" },
+            { id: 11, name: "機會", type: "card", col: 8, row: 5, icon: "❓" },
+            { id: 12, name: "射手座", type: "event", col: 8, row: 6, icon: "♐" },
+            { id: 13, name: "三裂星雲", type: "event", col: 8, row: 7, icon: "🌺" },
+
+            { id: 14, name: "太陽系", type: "goal", col: 8, row: 8, icon: "☀️" },
+            { id: 15, name: "牡羊座", type: "event", col: 7, row: 8, icon: "♈" },
+            { id: 16, name: "金牛座", type: "event", col: 6, row: 8, icon: "♉" },
+            { id: 17, name: "機會", type: "card", col: 5, row: 8, icon: "❓" },
+            { id: 18, name: "雙子座", type: "event", col: 4, row: 8, icon: "♊" },
+            { id: 19, name: "命運", type: "card", col: 3, row: 8, icon: "📜" },
+            { id: 20, name: "黑寡婦脈衝星", type: "event", col: 2, row: 8, icon: "🕷️" },
+
+            { id: 21, name: "恆星遊樂園", type: "corner", col: 1, row: 8, icon: "🎡" },
+            { id: 22, name: "雙魚座", type: "event", col: 1, row: 7, icon: "♓" },
+            { id: 23, name: "機會", type: "card", col: 1, row: 6, icon: "❓" },
+            { id: 24, name: "天蠍座", type: "event", col: 1, row: 5, icon: "♏" },
+            { id: 25, name: "獵戶座大星雲", type: "event", col: 1, row: 4, icon: "🎸" },
+            { id: 26, name: "處女座", type: "event", col: 1, row: 3, icon: "♍" },
+            { id: 27, name: "摩羯座", type: "event", col: 1, row: 2, icon: "♑" }
+        ];
+
+        // 普通事件資料庫 
+        const NormalEventsDatabase = {
+            1: {
+                isMultiStage: true,
+                stages: [
+                    { customId: 'leo_1', title: "深淵坑洞的救援" },
+                    {
+                        title: "國王的熱情款待",
+                        desc: "大球再次來到獅子座時，受到了國王的熱切招待！<br><br>國王表示為了感謝大球拯救皇子，已向宗主星座「武仙座」申請了代表無上榮耀的「海克力士勳章」，請大球務必出席接下來的授勳典禮！",
+                        amt: 200,
+                        btnText: "答應出席並收下車馬費 (+200 碎片)"
+                    },
+                    {
+                        title: "無上榮耀的授勳",
+                        desc: "盛大的授勳典禮開始了！全獅子座的恆星們都在為大球歡呼！<br><br>大球被授予了閃耀的「海克力士勳章」，正式成為獅子座的榮譽貴賓！",
+                        amt: 100,
+                        btnText: "接受勳章與獎金 (+100 碎片)",
+                        rewardItem: 'hercules_medal'
+                    },
+                    {
+                        title: "皇家宴會廳",
+                        desc: "身為獅子座的榮譽貴賓，每次停留獅子座都能前往皇家宴會廳，享用頂級的星光晚餐！<br><br>大球吃飽喝足，感覺充滿了能量！",
+                        amt: 50,
+                        btnText: "享用晚餐 (+50 碎片)",
+                        isRepeatable: true
+                    }
+                ]
+            },
+
+            2: {
+                isMultiStage: true,
+                stages: [
+                    { customId: 'creation_1', title: "恆星育幼院" },
+                    { customId: 'creation_2', title: "再次參觀" },
+                    { customId: 'creation_3', title: "孩子王", isRepeatable: true }
+                ]
+            },
+
+            4: {
+                isMultiStage: true,
+                stages: [
+                    { customId: 'vega_1', title: "走失的喜鵲" },
+                    { customId: 'vega_2', title: "尋找喜鵲" },
+                    {
+                        title: "鵲橋相會",
+                        desc: "每次來到織女星，織女星和牛郎星總會在鵲橋上開心地和大球揮手，並撒落滿滿的星光祝福！",
+                        amt: 80,
+                        btnText: "揮手致意 (+80 碎片)",
+                        isRepeatable: true
+                    }
+                ]
+            },
+
+            5: { desc: "在星塵理工大學實驗室焊接電路，把電路板燒出一個洞...", amt: -200 },
+            8: { desc: "協助正義女神阿斯特莉亞校準宇宙天秤，維持了星際的平衡，獲得神明的餽贈！", amt: 300 },
+
+            9: {
+                isMultiStage: true,
+                stages: [
+                    {
+                        title: "交通大亂",
+                        desc: "仙女座星系碰撞導致交通大亂，你和其他恆星大球擠成一團，必須支付過路費繞道才能離開。",
+                        amt: -200,
+                        btnText: "支付繞道費 (-200 碎片)",
+                        mandatory: true
+                    },
+                    { customId: 'andromeda_2', title: "志工招募" },
+                    {
+                        title: "交通重建完成",
+                        desc: "經過長期的交通指揮以及星際道路重建，這邊的交通問題已經解決了！<br><br>交通隊長：「這個哨子就給你當作紀念吧！」",
+                        amt: 500,
+                        btnText: "收下獎金與哨子 (+500 碎片)",
+                        rewardItem: 'whistle'
+                    },
+                    {
+                        title: "最終穩定階段：星際模範道路",
+                        desc: "每次經過仙女座大星系，看到井然有序的交通，大球覺得很自豪。",
+                        amt: 20,
+                        btnText: "欣慰地通過 (+20 碎片)",
+                        isRepeatable: true
+                    }
+                ]
+            },
+
+            10: {
+                isMultiStage: true,
+                stages: [
+                    {
+                        title: "天價賠償",
+                        desc: "大球在滾動時不小心輾過當地古老文明的衛星系統，面臨了天價賠償費...<br><br><span class='text-red-400 font-bold'>這筆賠償費用可是逃不掉的，乖乖付錢吧！</span>",
+                        amt: -800,
+                        btnText: "認賠支付 (-800 碎片)",
+                        mandatory: true
+                    },
+                    { customId: 'cancer_2', title: "黑名單過路費" },
+                    {
+                        title: "海克力士的威壓",
+                        desc: "因為身上掛著「海克力士勳章」，巨蟹座的居民對你恭敬有加，畢竟神話中巨蟹可是被海克力士踩扁的啊！<br><br>他們再也不敢向你收取任何過路費了。",
+                        amt: 0,
+                        btnText: "大搖大擺免費通行 (+0 碎片)",
+                        isRepeatable: true
+                    }
+                ]
+            },
+
+            12: { desc: "掠過銀河系中心黑洞，利用重力彈弓加速！<br><span class='text-yellow-400 font-bold'>(下一次擲骰點數將會加倍！)</span>", amt: 0, special: "double_dice" },
+
+            13: {
+                isMultiStage: true,
+                stages: [
+                    {
+                        title: "銀河圍棋夏令營",
+                        desc: "今年的銀河圍棋夏令營在美麗的三裂星雲舉辦！<br><br>大球，你要報名參加這場充滿挑戰的夏令營嗎？",
+                        amt: -200,
+                        btnText: "支付報名費 (-200 碎片)"
+                    },
+                    {
+                        title: "圍棋課程",
+                        desc: "夏令營開始了！大球認真地聽著老師講解圍棋定石。<br><br>不過因為大球太大太圓了，一不小心就在棋盤上滾來滾去，把大家的棋子都弄亂了，惹得全場哄堂大笑！",
+                        amt: 0,
+                        btnText: "繼續聽課 (+0 碎片)"
+                    },
+                    {
+                        title: "夏令營競賽",
+                        desc: "夏令營最終的圍棋競賽開始了！氣氛非常緊張！<br><br>大球在最後一局下出了隱蔽的妙手，成功逆轉勝，達成了三勝的佳績！大會頒發了豐厚的獎金與一顆特級骰子！",
+                        amt: 500,
+                        btnText: "領取獎金與骰子 (+500 碎片)",
+                        rewardItem: 'magic_dice'
+                    },
+                    {
+                        title: "美麗的三裂星雲",
+                        desc: "夏令營已經圓滿結束了。<br><br>美麗的三裂星雲是個非常適合度假的地方，大球在這裡放鬆身心，享受寧靜的宇宙時光。",
+                        amt: 50,
+                        btnText: "享受假期 (+50 碎片)",
+                        isRepeatable: true
+                    }
+                ]
+            },
+
+            // 牡羊座：多階段事件擴充
+            15: {
+                isMultiStage: true,
+                stages: [
+                    {
+                        title: "連敗的夜晚",
+                        desc: "牡羊座是星際電競館的所在地，館長「婁宿三」是大球的好朋友。這天，大球來到電競館找館長打俄羅斯方塊。<br><br>結果因為技巧還不純熟，大球輸了一整晚，並且因為太過沮喪而失去了星光碎片...",
+                        amt: -250,
+                        btnText: "沮喪離開 (-250 碎片)",
+                        mandatory: true
+                    },
+                    {
+                        title: "初嚐勝果",
+                        desc: "大球經過一段時間的刻苦努力，增進了自己的T-Spin以及堆疊技巧！<br><br>在這個夜晚，大球終於初次贏了婁宿三一局！受到了婁宿三的大力誇獎！",
+                        amt: 50,
+                        btnText: "繼續努力 (+50 碎片)"
+                    },
+                    {
+                        title: "勢均力敵",
+                        desc: "大球努力不懈，持續精進自己的All-Spin及下消技巧！<br><br>現在實力大增，已經可以和婁宿三打得有來有回了，雙方展開了精彩的對決！",
+                        amt: 50,
+                        btnText: "繼續精進 (+50 碎片)"
+                    },
+                    {
+                        customId: 'aries_4',
+                        title: "第四階段：宇宙方塊大賞"
+                    },
+                    {
+                        customId: 'aries_5',
+                        title: "方塊對決日常",
+                        isRepeatable: true
+                    }
+                ]
+            },
+
+            16: {
+                isMultiStage: true,
+                stages: [
+                    {
+                        title: "報名參賽",
+                        desc: "宇宙大球狂飆賽是一個聚集了各路恆星大球、大家在蜿蜒賽道上齊聚滾動的盛大賽事！<br><br>大球，你要報名參加這場熱血的競速嗎？",
+                        amt: -200,
+                        btnText: "支付報名費 (-200 碎片)"
+                    },
+                    {
+                        title: "魔鬼訓練",
+                        desc: "報名成功！但是沒有好好訓練可是不行的呢！前方的對手可是身經百戰。<br><br>要聘請專門的大球滾動教練進行一對一指導嗎？",
+                        amt: -300,
+                        btnText: "支付特訓費 (-300 碎片)"
+                    },
+                    {
+                        title: "比賽優勝！",
+                        desc: "經過嚴格訓練的大球，在賽道上展現出驚人的過彎技巧，擊敗了其他恆星，獲得了宇宙大球狂飆賽的總冠軍！<br><br>大會頒發了 <span class='text-yellow-400 font-bold'>500 碎片獎金</span>，並加碼贈送了一顆「特級骰子」！",
+                        amt: 500,
+                        btnText: "領取獎金與特級骰子 (+500 碎片)",
+                        rewardItem: 'magic_dice'
+                    },
+                    {
+                        title: "畢宿飯店冠軍房",
+                        desc: "身為大球狂飆賽的冠軍，每次經過金牛座都能免費入住頂級的「畢宿飯店冠軍房」！<br><br>充分的休息讓大球精神百倍！",
+                        amt: 50,
+                        btnText: "獲得飯店招待 (+50 碎片)",
+                        isRepeatable: true
+                    }
+                ]
+            },
+
+            18: {
+                isMultiStage: true,
+                stages: [
+                    { customId: 'gemini_1', title: "惡作劇危機" },
+                    { customId: 'gemini_2', title: "雙子星的報恩", isRepeatable: true }
+                ]
+            },
+
+            20: {
+                isMultiStage: true,
+                stages: [
+                    { customId: 'pulsar_main', title: "黑寡婦脈衝星" }
+                ]
+            },
+
+            22: { desc: "遇見化身為雙魚的美神與小愛神，護送他們成功躲避怪物提豐的追擊，獲得了祝福！", amt: 300 },
+            24: { desc: "和VTuber朋友連動玩恐怖遊戲，大球受到嚴重驚嚇，逃跑途中遺失了不少碎片...", amt: -300 },
+            25: { desc: "在星際演奏廳彈奏原創曲「恆星搖籃曲」，大獲好評！", amt: 300 },
+
+            26: {
+                isMultiStage: true,
+                stages: [
+                    { customId: 'virgo_1', title: "協助debug" },
+                    {
+                        customId: 'virgo_2',
+                        title: "老朋友的閒聊",
+                        desc: "大球和角宿一開心地聊了最近的宇宙趣事！<br><br>身為debug大師的大球，總能獲得角宿一的熱情招待。",
+                        amt: 50,
+                        btnText: "領取禮物 (+50 碎片)",
+                        isRepeatable: true
+                    }
+                ]
+            },
+
+            27: {
+                isMultiStage: true,
+                stages: [
+                    {
+                        title: "銀河科技年會的邀請",
+                        desc: "一年一度的銀河科技年會即將在摩羯座盛大舉辦！<br><br>身為頂尖技術恆星的大球，收到了一封來自學會的燙金邀請函，誠摯邀請你在年會上發表演說！",
+                        amt: 0,
+                        btnText: "收下邀請函 (+0 碎片)"
+                    },
+                    { customId: 'capricorn_2', title: "死線將近" },
+                    {
+                        title: "Merak16 發表大成功！",
+                        desc: "大球站上講台，自信地展示了最新研發的「Merak16」指令集架構！<br><br>前瞻性的設計與完美的演說震驚了全場！台下爆發出如雷的掌聲！學會不僅頒發了代表最高榮譽的「年度學者勳章」，還提供了巨額的研發贊助！",
+                        amt: 800,
+                        btnText: "接受贊助與勳章 (+800 碎片)",
+                        rewardItem: 'scholar_medal'
+                    },
+                    {
+                        title: "年度學者的禮遇",
+                        desc: "身為銀河科技年會的「年度學者」，每次來到摩羯座，大球都會受到最高規格的禮遇與招待！<br><br>滿滿的技術交流讓大球獲益良多！",
+                        amt: 100,
+                        btnText: "享受禮遇 (+100 碎片)",
+                        isRepeatable: true
+                    }
+                ]
+            }
+        };
+
+        // 太陽系直播庫
+        const SolarLivestreamDatabase = [
+            { id: 'chat', icon: '💬', name: '雜談', success: '大家聊得很開心，氣氛溫馨！', fail: '不小心說錯話，被聊天室無情嘲笑...', winAmt: 300, loseAmt: -500 },
+            { id: 'tetris', icon: '🧩', name: '打方塊', success: '大球一個神操作，直接輾過對手！', fail: '大球遭到對手無情擊潰...', winAmt: 400, loseAmt: -500 },
+            { id: 'go', icon: '⚫', name: '下圍棋', success: '大球下出神之一手，對手投子認輸！', fail: '被對手下出妙手大逆轉...', winAmt: 600, loseAmt: -800 },
+            { id: 'hardware', icon: '🔧', name: '計算機組織教學', success: '順利講完艱深架構，獲得一片掌聲！', fail: '太深奧了，伴星們都睡著了...', winAmt: 400, loseAmt: -500 },
+            { id: 'unity', icon: '💻', name: 'Unity遊戲開發', success: '成功做出了超可愛的滾大球小遊戲！', fail: '跑出滿滿的紅字Error，企劃失敗...', winAmt: 500, loseAmt: -600 },
+            { id: 'piano', icon: '🎹', name: '鋼琴回', success: '完美的演奏，伴星們安可不斷！', fail: '不小心彈錯好幾個音，有些尷尬...', winAmt: 400, loseAmt: -300 },
+            { id: 'minecraft', icon: '⛏️', name: 'Minecraft', success: '成功蓋出美麗壯觀的星光大教堂！', fail: '苦力怕突然出現，家裡被炸出一個大洞...', winAmt: 500, loseAmt: -600 },
+            { id: 'song', icon: '🎵', name: '原創曲賞析', success: '伴星們深受感動，狂刷螢光棒！', fail: '數位鋼琴突然故障，草草結束...', winAmt: 300, loseAmt: -500 }
+        ];
+
+        // 機會卡庫
+        const ChanceCards = [
+            { id: 'b1', type: 'basic', q: '天璇「沒有」開過以下哪一種企劃？', opts: { A: 'Verilog解題', B: '圍棋實戰', C: '鋼琴雜談', D: '歌回' }, ans: 'D', win: 300, lose: -300 },
+            { id: 'b2', type: 'basic', q: '截至2026/03/24為止，天璇的Tetrio最高曾經到達過哪個段位？', opts: { A: 'S+', B: 'SS', C: 'U', D: 'X' }, ans: 'C', win: 300, lose: -300 },
+            { id: 'b3', type: 'basic', q: '天璇的生日是幾月幾號？', opts: { A: '3/22', B: '3/23', C: '3/24', D: '3/25' }, ans: 'D', win: 300, lose: -300 },
+            { id: 'b4', type: 'basic', q: '「大球」這個名稱，是以下何者命名的？', opts: { A: '蒼曜', B: '玻璃姬', C: '天璇', D: '流光' }, ans: 'B', win: 300, lose: -300 },
+            { id: 'b5', type: 'basic', q: '天璇頻道的周年慶通常會在下列哪一時間舉行？', opts: { A: '五月中旬', B: '六月上旬', C: '七月上旬', D: '七月下旬' }, ans: 'A', win: 300, lose: -300 },
+            { id: 'b6', type: 'basic', q: '請問截至2026/03/24為止，天璇頻道會在每年的萬聖節進行什麼樣的企劃？', opts: { A: '原創曲猜歌回', B: '萬聖節變裝派對', C: '恐怖遊戲直播', D: '不給糖就導彈' }, ans: 'D', win: 300, lose: -300 },
+            { id: 'b7', type: 'basic', q: '請問以下哪一個是天璇5.0新衣裝Live2D的可開關配件？', opts: { A: '外套', B: '護目鏡', C: '星星髮飾', D: '呆毛' }, ans: 'B', win: 300, lose: -300 },
+            { id: 'b8', type: 'basic', q: '請問在天璇唬爛ChatGPT的直播中，天璇表示當時光緒皇帝是用以下哪個材料開發數位電路的？', opts: { A: '火柴', B: '絲綢', C: '蠟燭', D: '箭矢' }, ans: 'C', win: 300, lose: -300 },
+            { id: 'b9', type: 'basic', q: '請問下列哪種「不是」天璇討厭的食物？', opts: { A: '芋頭', B: '香菜', C: '羊肉', D: '芹菜' }, ans: 'A', win: 300, lose: -300 },
+            { id: 'a1', type: 'advanced', q: '下列哪一首原創曲「沒有」出現在2024天璇鋼琴獨奏會最後的原創組曲中？', opts: { A: '天璇的直播BGM', B: '十二調輪璇曲', C: '夢冬邊境', D: '上面三首全部都有出現' }, ans: 'C', win: 500, lose: -500 },
+            { id: 'a2', type: 'advanced', q: '以下哪位繪師/伴星畫過最多天璇的圖？(包含大球主題圖)', opts: { A: '玻璃姬', B: '白詰草', C: '悠糸', D: '蒼曜' }, ans: 'D', win: 500, lose: -500 },
+            { id: 'a3', type: 'advanced', q: '請問以下哪個圍棋開局是天璇最常用的？', opts: { A: '雙星位開局', B: '星小目開局', C: '錯小目開局', D: '星三三開局' }, ans: 'B', win: 500, lose: -500 },
+            { id: 'a4', type: 'advanced', q: '請問以下哪個程式語言或硬體描述語言天璇「從來沒有」寫過？', opts: { A: 'VHDL', B: 'Java', C: 'Python', D: 'Verilog' }, ans: 'A', win: 500, lose: -500 },
+            { id: 'a5', type: 'advanced', q: '請問下列哪一張插圖「不是」由天璇親自繪製的？', opts: { A: '500訂閱賀圖', B: '2022情人節賀圖', C: '2023情人節賀圖', D: '以上三張都是天璇畫的' }, ans: 'C', win: 500, lose: -500 },
+            { id: 'm1', type: 'boss', q: '請將下列原創曲發布日期，由早排到晚<br>(1) 夏夜星舞<br>(2) 晨露映照的世界<br>(3) 天市垣<br>(4) 星冕', opts: { A: '1、2、3、4', B: '3、4、2、1', C: '4、3、2、1', D: '4、3、1、2' }, ans: 'B', win: 800, lose: -800 },
+            { id: 'm2', type: 'boss', q: '請問截至2026/03/24為止，下列哪一項物品，「沒有」在蒼曜所繪製的「大球進食」系列圖中，被大球啃食過？', opts: { A: '盤子', B: '月球', C: 'Youtube商標', D: '俄羅斯方塊' }, ans: 'A', win: 800, lose: -800 },
+            { id: 'm3', type: 'boss', q: '請問下列哪個架構或觀念，不是天璇在2021年聖誕節計算機組織speed run時分享的主要內容？', opts: { A: 'single cycle CPU', B: '5 stage pipelined CPU', C: 'out of order execution', D: 'memory hierarchy' }, ans: 'C', win: 800, lose: -800 }
+        ];
+
+        // 命運卡庫
+        const FateCards = [
+            { id: 'f1', desc: "適逢地球特殊節日，大球將前往太陽系進行特別直播！<br><span class='text-purple-400 font-bold'>(支付 200 碎片作為旅費，大球即刻移動至太陽系)</span>" },
+            { id: 'f2', desc: "於 {target} 發現大量星光碎片，請立即前往開採！<br><span class='text-yellow-400 font-bold'>(於該處出現價值 200 碎片，5 回合後消失)</span>" },
+            { id: 'f3', desc: "{target} 有大質量恆星坍縮成黑洞，請避免前往。<br><span class='text-red-400 font-bold'>(抵達該處將被吸走大量星光碎片，5 回合後消失)</span>" },
+            { id: 'f4', desc: "宇宙旅遊周，前往 {target} 觀賞特殊天文景觀可獲得額外星光碎片！<br><span class='text-yellow-400 font-bold'>(於該處出現價值 200 碎片，5 回合後消失)</span>" },
+            { id: 'f5', desc: "宇宙休息日，觀景區及恆星遊樂園閉園 2 回合！<br><span class='text-gray-400 font-bold'>(景觀與遊樂園變暗，期間走到無效果)</span>" },
+            { id: 'f6', desc: "大球生病了，滾動速度下降......<br><span class='text-green-400 font-bold'>(接下來 3 回合只能擲出 1~3 的數字)</span>" },
+            { id: 'f7', desc: "大球吃到喜歡的奶酪，精神變的超級好!!<br><span class='text-yellow-400 font-bold'>(接下來 3 回合只能擲出 4~6 的數字)</span>" }
+        ];
+
+        /**
+         * 模組 2：畫面渲染 (Rendering)
+         */
+        const Renderer = {
+            initBoard: function () {
+                const boardContainer = document.getElementById('board');
+
+                MapData.forEach(cellData => {
+                    const cellEl = document.createElement('div');
+                    let specialClass = '';
+                    let badgeHtml = '';
+
+                    if (cellData.type === 'corner') specialClass = 'corner';
+                    if (cellData.type === 'card') specialClass = 'card-cell';
+                    if (cellData.type === 'start') {
+                        specialClass = 'corner start-cell';
+                        badgeHtml = '<div class="corner-badge start-badge">START</div>';
+                    }
+                    if (cellData.type === 'goal') {
+                        specialClass = 'corner goal-cell';
+                        badgeHtml = '<div class="corner-badge goal-badge">GOAL</div>';
+                    }
+
+                    cellEl.className = `cell ${specialClass}`;
+                    cellEl.style.gridColumn = cellData.col;
+                    cellEl.style.gridRow = cellData.row;
+                    cellEl.id = `cell-${cellData.id}`;
+
+                    cellEl.innerHTML = `${badgeHtml}<span class="cell-icon">${cellData.icon}</span><span class="cell-text">${cellData.name}</span>`;
+                    boardContainer.appendChild(cellEl);
+                });
+
+                setTimeout(() => {
+                    this.updatePlayerPosition(GameState.playerPos);
+                    this.updateMapVisuals();
+                    this.updateInventory();
+                }, 100);
+            },
+
+            updateFontScale: function (val) {
+                document.documentElement.style.setProperty('--board-font-scale', val);
+            },
+
+            updatePlayerPosition: function (posIndex) {
+                const targetCell = document.getElementById(`cell-${posIndex}`);
+                const playerToken = document.getElementById('player-token');
+
+                if (targetCell && playerToken) {
+                    const targetX = targetCell.offsetLeft + (targetCell.offsetWidth / 2) - (playerToken.offsetWidth / 2);
+                    const targetY = targetCell.offsetTop + (targetCell.offsetHeight / 2) - (playerToken.offsetHeight / 2);
+                    playerToken.style.transform = `translate(${targetX}px, ${targetY}px)`;
+                }
+            },
+
+            updateUIStats: function () {
+                const total = GameState.assets.hand + GameState.assets.bank + GameState.assets.invest;
+                document.getElementById('ui-hand').innerText = GameState.assets.hand.toLocaleString();
+                document.getElementById('ui-bank').innerText = GameState.assets.bank.toLocaleString();
+                document.getElementById('ui-invest').innerText = GameState.assets.invest.toLocaleString();
+                document.getElementById('ui-total').innerText = total.toLocaleString();
+                document.getElementById('ui-target').innerText = GameState.assets.target.toLocaleString();
+
+                const playerToken = document.getElementById('player-token');
+                const buffIndicator = document.getElementById('buff-indicator');
+                if (GameState.status.rested) {
+                    playerToken.classList.add('buff-glow');
+                    buffIndicator.classList.remove('hidden');
+                } else {
+                    playerToken.classList.remove('buff-glow');
+                    buffIndicator.classList.add('hidden');
+                }
+            },
+
+            showTooltip: function (e, text) {
+                const tooltip = document.getElementById('global-tooltip');
+                tooltip.innerHTML = text;
+                tooltip.style.left = (e.clientX - 15) + 'px';
+                tooltip.style.top = e.clientY + 'px';
+                tooltip.classList.remove('hidden');
+            },
+
+            hideTooltip: function () {
+                const tooltip = document.getElementById('global-tooltip');
+                tooltip.classList.add('hidden');
+            },
+
+            updateInventory: function () {
+                const container = document.getElementById('inventory-container');
+                container.innerHTML = '';
+
+                let hasItems = false;
+
+                Object.keys(GameState.inventory).forEach(itemId => {
+                    const count = GameState.inventory[itemId];
+                    if (count > 0 && ItemDatabase[itemId]) {
+                        hasItems = true;
+                        const item = ItemDatabase[itemId];
+                        const isClickable = item.action !== null;
+
+                        const itemHtml = `
+                            <div class="flex items-center justify-between bg-gray-800 p-2.5 rounded-lg border border-gray-600 ${isClickable ? 'cursor-pointer hover:bg-gray-700 hover:border-indigo-400 hover:shadow-[0_0_10px_rgba(99,102,241,0.5)]' : ''} transition" 
+                                 ${isClickable ? `onclick="ItemDatabase['${itemId}'].action()"` : ''}
+                                 onmouseenter="Renderer.showTooltip(event, '${item.desc}')" 
+                                 onmouseleave="Renderer.hideTooltip()"
+                                 onmousemove="if(document.getElementById('global-tooltip').classList.contains('hidden') === false) { document.getElementById('global-tooltip').style.left = (event.clientX - 15) + 'px'; document.getElementById('global-tooltip').style.top = event.clientY + 'px'; }">
+                                <div class="flex items-center">
+                                    <span class="text-2xl mr-2">${item.icon}</span>
+                                    <span class="text-white font-bold text-sm tracking-wide">${item.name}</span>
+                                </div>
+                                <span class="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded-full ml-2 shadow">x${count}</span>
+                            </div>
+                        `;
+                        container.innerHTML += itemHtml;
+                    }
+                });
+
+                if (!hasItems) {
+                    container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">背包空空如也</p>';
+                }
+            },
+
+            updateMapVisuals: function () {
+                document.querySelectorAll('.cell').forEach(cell => {
+                    cell.classList.remove('closed-park');
+                    const oldAtt = cell.querySelectorAll('.map-attachment, .story-indicator');
+                    oldAtt.forEach(el => el.remove());
+                });
+                const oldSick = document.getElementById('sick-indicator');
+                if (oldSick) oldSick.remove();
+                const oldCheese = document.getElementById('cheese-indicator');
+                if (oldCheese) oldCheese.remove();
+
+                const player = document.getElementById('player-token');
+                if (GameState.currentTurn <= GameState.status.sickUntil) {
+                    const sickBadge = document.createElement('div');
+                    sickBadge.id = 'sick-indicator';
+                    sickBadge.className = 'absolute -top-3 -right-3 text-2xl z-50 drop-shadow-md animate-pulse bg-white rounded-full h-8 w-8 flex items-center justify-center';
+                    sickBadge.innerText = '🤒';
+                    player.appendChild(sickBadge);
+                } else if (GameState.currentTurn <= GameState.status.cheeseUntil) {
+                    const cheeseBadge = document.createElement('div');
+                    cheeseBadge.id = 'cheese-indicator';
+                    cheeseBadge.className = 'absolute -top-3 -left-3 text-2xl z-50 drop-shadow-md animate-bounce bg-white rounded-full h-8 w-8 flex items-center justify-center';
+                    cheeseBadge.innerText = '🧀';
+                    player.appendChild(cheeseBadge);
+                }
+
+                if (GameState.currentTurn < GameState.status.parkOpenAt) {
+                    const closedCells = [2, 4, 9, 13, 20, 21, 25];
+                    closedCells.forEach(id => {
+                        const cell = document.getElementById(`cell-${id}`);
+                        if (cell) cell.classList.add('closed-park');
+                    });
+                }
+
+                // 黑寡婦脈衝星的專屬進度燈號
+                const pulsarCell = document.getElementById('cell-20');
+                if (pulsarCell) {
+                    const indicatorContainer = document.createElement('div');
+                    indicatorContainer.className = 'story-indicator absolute top-1.5 left-1.5 flex space-x-1 z-20';
+
+                    if (GameState.flags.pulsarGoodEnding) {
+                        const dotEl = document.createElement('div');
+                        dotEl.className = `w-3 h-3 rounded-full border border-gray-800 bg-green-400 shadow-[0_0_8px_#4ade80]`;
+                        indicatorContainer.appendChild(dotEl);
+                    } else if (GameState.flags.pulsarBadEnding) {
+                        const dotEl = document.createElement('div');
+                        dotEl.className = `w-3 h-3 rounded-full border border-gray-800 bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse`;
+                        indicatorContainer.appendChild(dotEl);
+                    } else if (GameState.storyProgress[20] > 0) {
+                        const dotsCount = GameState.storyProgress[20];
+                        for (let i = 0; i < dotsCount; i++) {
+                            const dotEl = document.createElement('div');
+                            dotEl.className = `w-3 h-3 rounded-full border border-gray-800 bg-yellow-400 shadow-[0_0_8px_#facc15] animate-pulse`;
+                            indicatorContainer.appendChild(dotEl);
+                        }
+                    }
+                    if (indicatorContainer.children.length > 0) {
+                        pulsarCell.appendChild(indicatorContainer);
+                    }
+                }
+
+                GameState.mapAttachments.forEach(att => {
+                    const cell = document.getElementById(`cell-${att.pos}`);
+                    if (cell) {
+                        const attEl = document.createElement('div');
+                        attEl.className = 'map-attachment absolute text-4xl z-20 ' +
+                            (att.type === 'shard' ? '-top-4 -right-4 drop-shadow-[0_0_10px_rgba(250,204,21,1)] animate-bounce'
+                                : '-bottom-4 -right-4 drop-shadow-[0_0_10px_rgba(239,68,68,1)] animate-[spin_3s_linear_infinite]');
+                        attEl.innerText = att.type === 'shard' ? '⭐' : '🕳️';
+                        cell.appendChild(attEl);
+                    }
+                });
+
+                Object.keys(GameState.storyProgress).forEach(cellId => {
+                    if (cellId === '20') return;
+
+                    const cell = document.getElementById(`cell-${cellId}`);
+                    const eventData = NormalEventsDatabase[cellId];
+                    if (cell && eventData && eventData.isMultiStage) {
+                        const progress = GameState.storyProgress[cellId];
+                        const maxStage = eventData.stages.length - 1;
+
+                        if (progress > 0) {
+                            const indicatorContainer = document.createElement('div');
+                            indicatorContainer.className = 'story-indicator absolute top-1.5 left-1.5 flex space-x-1 z-20';
+
+                            if (progress > maxStage && maxStage > 0) {
+                                const dotEl = document.createElement('div');
+                                dotEl.className = `w-3 h-3 rounded-full border border-gray-800 bg-green-400 shadow-[0_0_8px_#4ade80]`;
+                                indicatorContainer.appendChild(dotEl);
+                            } else {
+                                const dotsCount = Math.min(progress, maxStage + 1);
+                                for (let i = 0; i < dotsCount; i++) {
+                                    const dotEl = document.createElement('div');
+                                    dotEl.className = `w-3 h-3 rounded-full border border-gray-800 bg-yellow-400 shadow-[0_0_8px_#facc15] animate-pulse`;
+                                    indicatorContainer.appendChild(dotEl);
+                                }
+                            }
+                            cell.appendChild(indicatorContainer);
+                        }
+                    }
+                });
+            },
+
+            logEvent: function (message, isHighlight = false) {
+                const logEl = document.getElementById('event-log-placeholder');
+                if (logEl) {
+                    logEl.remove();
+                }
+                const logContainer = document.getElementById('event-log-container');
+                const newLog = document.createElement('p');
+                newLog.className = `mt-1 ${isHighlight ? 'text-yellow-300 font-bold' : 'text-gray-300'}`;
+                newLog.innerHTML = `> ${message}`;
+
+                logContainer.appendChild(newLog);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            },
+
+            showModal: function (title, description, icon, actionsHtml, isLarge = false) {
+                const overlay = document.getElementById('modal-overlay');
+                const modalBox = overlay.querySelector('.modal-animate');
+
+                if (isLarge) {
+                    modalBox.classList.remove('max-w-md', 'p-8');
+                    modalBox.classList.add('max-w-3xl', 'p-10', 'w-11/12');
+                } else {
+                    modalBox.classList.remove('max-w-3xl', 'p-10', 'w-11/12');
+                    modalBox.classList.add('max-w-md', 'p-8');
+                }
+
+                document.getElementById('modal-icon').innerText = icon || '✨';
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-desc').innerHTML = description;
+                document.getElementById('modal-actions').innerHTML = actionsHtml;
+
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            },
+
+            hideModal: function () {
+                const overlay = document.getElementById('modal-overlay');
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            },
+
+            showFullScreenImage: function (type) {
+                const imgUrl = type === 'win' ? './img/happy_end.jpg' : './img/bad_end.jpg';
+                const text = type === 'win'
+                    ? '✨ 天璇蒐集了滿滿的星光碎片！成功抵達地球，與伴星們舉辦了有史以來最棒的星光派對！ ✨'
+                    : '💔 大球破產了... 星光碎片歸零，只能去睡公園，沒辦法見到伴星們了... 💔';
+
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black';
+                overlay.innerHTML = `
+                    <div class="w-full h-full bg-gray-900 flex items-end justify-center relative overflow-hidden ${type === 'win' ? 'border-4 border-yellow-400' : 'border-4 border-red-600'}" style="background-image: url('${imgUrl}'); background-size: contain; background-repeat: no-repeat; background-position: center;">
+                        <div class="absolute bottom-12 w-11/12 max-w-4xl rounded-xl bg-black/80 py-4 px-6 backdrop-blur-md flex justify-center items-center border border-gray-600 shadow-2xl">
+                            <span class="text-xl md:text-2xl font-bold text-white tracking-wide leading-relaxed text-center drop-shadow-md">${text}</span>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove(); Renderer.showSummaryReport('${type}')" class="absolute top-6 right-6 px-6 py-2 bg-gray-800/80 hover:bg-gray-700 text-lg font-bold text-white rounded-full shadow-lg transition border border-gray-500 flex items-center group">
+                            查看結算報告 <span class="ml-2 group-hover:translate-x-1 transition-transform">➡️</span>
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            },
+
+            showSummaryReport: function (type) {
+                // 1. 整理任務清單
+                let tasks = [];
+                if (GameState.storyProgress[1] >= 1) tasks.push("拯救獅子座皇子");
+                if (GameState.storyProgress[2] >= 3) tasks.push("恆星育幼院孩子王");
+                if (GameState.storyProgress[4] >= 2) tasks.push("找回織女星的喜鵲");
+                if (GameState.storyProgress[9] >= 2) tasks.push("重建仙女座交通");
+                if (GameState.storyProgress[10] >= 2) tasks.push("破除巨蟹座黑名單");
+                if (GameState.storyProgress[13] >= 2) tasks.push("稱霸銀河圍棋夏令營");
+                if (GameState.storyProgress[15] >= 4) tasks.push("方塊大賞總冠軍");
+                if (GameState.storyProgress[16] >= 2) tasks.push("宇宙大球狂飆賽總冠軍");
+                if (GameState.storyProgress[18] >= 1) tasks.push("得到雙子星的認可");
+                if (GameState.flags.pulsarGoodEnding) tasks.push("拯救黑寡婦脈衝星的伴星");
+                if (GameState.storyProgress[26] >= 1) tasks.push("修復星際終端機");
+                if (GameState.storyProgress[27] >= 2) tasks.push("榮獲年度學者勳章");
+
+                let tasksHtml = tasks.length > 0
+                    ? tasks.map(t => `<span class="bg-indigo-900/80 text-indigo-200 px-3 py-1 rounded-full text-sm border border-indigo-500 mr-2 mb-2 inline-block">✅ ${t}</span>`).join('')
+                    : '<span class="text-gray-400 italic">大球似乎專注於趕路，沒有完成特別的任務。</span>';
+
+                // 2. 整理抖內名單
+                let donators = Object.keys(GameState.interaction.donatedUsers);
+                let donatorsHtml = '';
+                if (donators.length > 0) {
+                    donators.sort((a, b) => {
+                        let aData = GameState.interaction.donatedUsers[a];
+                        let bData = GameState.interaction.donatedUsers[b];
+                        let aAmt = typeof aData === 'object' ? aData.amount : aData * 50;
+                        let bAmt = typeof bData === 'object' ? bData.amount : bData * 50;
+                        return bAmt - aAmt;
+                    });
+
+                    donatorsHtml = donators.map(name => {
+                        let data = GameState.interaction.donatedUsers[name];
+                        let finalAmount = typeof data === 'object' ? data.amount : data * 50;
+                        return `<div class="flex justify-between items-center bg-pink-900/30 px-3 py-2 rounded border border-pink-500/30 mb-2">
+                                    <span class="text-pink-300 font-bold">${name}</span>
+                                    <span class="text-yellow-400 font-mono font-bold text-sm">NT$ ${finalAmount}</span>
+                                </div>`;
+                    }).join('');
+                } else {
+                    donatorsHtml = '<p class="text-gray-400 text-sm italic">尚無抖內紀錄</p>';
+                }
+
+                // 3. 整理簽到名單
+                let signIns = GameState.interaction.signedInUsers;
+                let signInsHtml = signIns.length > 0
+                    ? signIns.map(name => `<span class="text-green-300 bg-green-900/30 px-2 py-1 rounded border border-green-500/30 mr-2 mb-2 inline-block text-sm">✨ ${name}</span>`).join('')
+                    : '<p class="text-gray-400 text-sm italic">尚無簽到紀錄</p>';
+
+                // 4. 定義顏色與標題
+                const borderColor = type === 'win' ? 'border-yellow-400' : 'border-purple-500';
+                const shadowColor = type === 'win' ? 'shadow-[0_0_50px_rgba(250,204,21,0.3)]' : 'shadow-[0_0_50px_rgba(168,85,247,0.3)]';
+                const titleText = type === 'win' ? '✨ 星光派對大成功 ✨' : '💤 籌備之旅辛苦了 💤';
+
+                // 5. 建立彈出視窗
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 z-[110] flex flex-col items-center justify-start bg-black/95 backdrop-blur-md p-4 md:p-8 overflow-y-auto pt-10';
+
+                overlay.innerHTML = `
+                    <div class="w-full max-w-4xl bg-gray-900 border-2 ${borderColor} rounded-2xl ${shadowColor} p-6 md:p-10 flex flex-col relative modal-animate mb-10">
+                        <button onclick="this.closest('.fixed').remove()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl font-bold transition">×</button>
+                        
+                        <h1 class="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 text-center mb-8 tracking-wider">${titleText}</h1>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+                            <div class="space-y-6">
+                                <div class="bg-gray-800 p-5 rounded-xl border border-gray-600 shadow-inner">
+                                    <h3 class="text-xl font-bold text-indigo-300 mb-4 border-b border-indigo-500/50 pb-2 flex items-center">📊 旅程數據</h3>
+                                    <div class="flex justify-between items-center text-lg mb-2">
+                                        <span class="text-gray-300">總計擲骰次數：</span>
+                                        <span class="text-yellow-400 font-bold font-mono text-2xl">${GameState.stats.totalRolls} <span class="text-sm">次</span></span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-lg">
+                                        <span class="text-gray-300">總計環繞宇宙：</span>
+                                        <span class="text-green-400 font-bold font-mono text-2xl">${GameState.stats.totalLoops} <span class="text-sm">圈</span></span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-800 p-5 rounded-xl border border-gray-600 shadow-inner">
+                                    <h3 class="text-xl font-bold text-indigo-300 mb-4 border-b border-indigo-500/50 pb-2 flex items-center">🏆 故事里程碑</h3>
+                                    <div class="flex flex-wrap gap-2">
+                                        ${tasksHtml}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div class="bg-gray-800 p-5 rounded-xl border border-pink-500/30 shadow-inner flex flex-col max-h-64">
+                                    <h3 class="text-xl font-bold text-pink-400 mb-4 border-b border-pink-500/50 pb-2 flex items-center flex-shrink-0">💖 贊助名單 (引力干涉者)</h3>
+                                    <div class="overflow-y-auto pr-2 space-y-2 flex-grow">
+                                        ${donatorsHtml}
+                                    </div>
+                                </div>
+
+                                <div class="bg-gray-800 p-5 rounded-xl border border-green-500/30 shadow-inner flex flex-col max-h-64">
+                                    <h3 class="text-xl font-bold text-green-400 mb-4 border-b border-green-500/50 pb-2 flex items-center flex-shrink-0">📝 簽到名單 (星光充能者)</h3>
+                                    <div class="flex flex-wrap gap-2 overflow-y-auto pr-2 flex-grow content-start">
+                                        ${signInsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex justify-center w-full">
+                            <button onclick="this.closest('.fixed').remove(); GameLogic.resetGame();" class="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:-translate-y-1 active:scale-95 text-xl border border-indigo-400 flex items-center">
+                                <span class="mr-2">🔄</span> 回到主選單重新開始
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            }
+        };
+
+        /**
+         * 模組 3：遊戲核心邏輯 (Logic)
+         */
+        const GameLogic = {
+            _debtResolvedCallback: null,
+
+            gainItem: function (itemId, count = 1) {
+                if (GameState.inventory[itemId] === undefined) {
+                    GameState.inventory[itemId] = 0;
+                }
+                GameState.inventory[itemId] += count;
+                Renderer.updateInventory();
+                Renderer.logEvent(`🎒 獲得了道具：${ItemDatabase[itemId].icon} ${ItemDatabase[itemId].name} x${count}！`, true);
+            },
+
+            consumeItem: function (itemId, count = 1) {
+                if (GameState.inventory[itemId] >= count) {
+                    GameState.inventory[itemId] -= count;
+                    Renderer.updateInventory();
+                    return true;
+                }
+                return false;
+            },
+
+            useMagicDice: function () {
+                if (GameState.isMoving) return;
+
+                const desc = `
+                    <p class="text-indigo-300 text-lg mb-4">這是一顆神奇的特級骰子，可以直接操控命運！</p>
+                    <p class="text-white text-xl font-bold mb-4">請選擇你下一次要擲出的點數：</p>
+                `;
+
+                let btns = `<div class="grid grid-cols-3 gap-3 w-full mb-3">`;
+                for (let i = 1; i <= 6; i++) {
+                    btns += `<button onclick="GameLogic.confirmMagicDice(${i})" class="bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-2xl transition shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400">${i}</button>`;
+                }
+                btns += `</div><button onclick="Renderer.hideModal()" class="w-full bg-gray-600 hover:bg-gray-500 py-3 rounded-xl font-bold text-lg transition">取消使用</button>`;
+
+                Renderer.showModal("使用特級骰子", desc, "🎲", btns);
+            },
+
+            confirmMagicDice: function (value) {
+                Renderer.hideModal();
+                if (this.consumeItem('magic_dice', 1)) {
+                    GameState.nextFixedDice = value;
+                    Renderer.logEvent(`🎲 大球使用了特級骰子！指定了下一次行動為 ${value} 點！`, true);
+                }
+            },
+
+            signInAudience: function () {
+                const input = document.getElementById('signin-name');
+                const name = input.value.trim();
+                if (!name) return;
+
+                if (GameState.interaction.signedInUsers.includes(name)) {
+                    Renderer.logEvent(`⚠️ 伴星 [${name}] 已經簽到過了，無法重複領取獎勵！`, false);
+                    input.value = '';
+                    return;
+                }
+
+                GameState.interaction.signedInUsers.push(name);
+                Renderer.logEvent(`📝 感謝伴星 [${name}] 簽到為大球充能！獲得 50 碎片！`, true);
+                this.modifyShards(50);
+                input.value = '';
+            },
+
+            processDonation: function () {
+                const nameInput = document.getElementById('donate-name');
+                const amountInput = document.getElementById('donate-amount');
+                const diceInput = document.getElementById('donate-dice');
+
+                const name = nameInput.value.trim() || '神秘的伴星';
+                const amount = parseInt(amountInput ? amountInput.value : 0) || 50;
+                const dice = parseInt(diceInput.value);
+
+                if (isNaN(dice) || dice < 1 || dice > 6) {
+                    Renderer.logEvent(`❌ 抖內操作失敗：請輸入 1~6 的有效點數！`, false);
+                    return;
+                }
+
+                if (GameState.interaction.donatedUsers === undefined) {
+                    GameState.interaction.donatedUsers = {};
+                }
+
+                if (typeof GameState.interaction.donatedUsers[name] !== 'object') {
+                    let oldTimes = GameState.interaction.donatedUsers[name] || 0;
+                    GameState.interaction.donatedUsers[name] = { times: oldTimes, amount: oldTimes * 50 };
+                }
+
+                let userRecord = GameState.interaction.donatedUsers[name];
+                userRecord.amount += amount;
+
+                if (userRecord.times >= 2) {
+                    Renderer.logEvent(`💖 感謝 [${name}] 抖內 NT$${amount}！純粹的支持化作星光陪伴著大球！(已達控骰上限)`, true);
+                } else {
+                    userRecord.times += 1;
+                    GameState.nextFixedDice = dice;
+                    Renderer.logEvent(`💎 感謝 [${name}] 抖內 NT$${amount}！化身宇宙引力，指定大球下一步必定走 ${dice} 格！(已使用 ${userRecord.times}/2 次)`, true);
+                }
+
+                nameInput.value = '';
+                if (amountInput) amountInput.value = '';
+                diceInput.value = '';
+            },
+
+            setFixedDice: function () {
+                const input = document.getElementById('debug-dice-input');
+                const val = parseInt(input.value);
+                if (!isNaN(val) && val >= 1 && val <= 28) {
+                    GameState.nextFixedDice = val;
+                    Renderer.logEvent(`🔧 [控制台] 已設定下次擲骰固定前進 ${val} 步！`, true);
+                    input.value = '';
+                }
+            },
+
+            manualModifyShards: function () {
+                const input = document.getElementById('debug-money-input');
+                const val = parseInt(input.value);
+                if (!isNaN(val)) {
+                    Renderer.logEvent(`🔧 [控制台] 手動觸發資金變動：${val > 0 ? '+' : ''}${val} 碎片`, true);
+                    this.modifyShards(val);
+                    input.value = '';
+                }
+            },
+
+            cleanupAttachments: function () {
+                const now = GameState.currentTurn;
+                const initialCount = GameState.mapAttachments.length;
+                GameState.mapAttachments = GameState.mapAttachments.filter(att => now < att.expireAt);
+                if (GameState.mapAttachments.length < initialCount) {
+                    Renderer.logEvent(`⏳ 有地圖上的星光碎片或黑洞已經因為逾期而消失了。`);
+                }
+            },
+
+            rollDice: function () {
+                if (GameState.isMoving) return;
+
+                GameState.currentTurn++;
+                GameState.stats.totalRolls++;
+
+                this.cleanupAttachments();
+                Renderer.updateMapVisuals();
+
+                let diceValue;
+                let isSick = GameState.currentTurn <= GameState.status.sickUntil;
+                let isCheese = GameState.currentTurn <= GameState.status.cheeseUntil;
+
+                if (GameState.nextFixedDice !== null) {
+                    diceValue = GameState.nextFixedDice;
+                    GameState.nextFixedDice = null;
+                    Renderer.logEvent(`🚀 受到引力干涉或道具影響，擲出了指定的 ${diceValue} 點！`, true);
+                } else {
+                    if (isCheese) {
+                        diceValue = Math.floor(Math.random() * 3) + 4;
+                        Renderer.logEvent(`🧀 大球吃了奶酪心情大好！擲出了 ${diceValue} 點！`, true);
+                    } else if (isSick) {
+                        diceValue = Math.floor(Math.random() * 3) + 1;
+                        Renderer.logEvent(`🤒 大球生病中，滾動速度下降，擲出了 ${diceValue} 點！`, true);
+                    } else {
+                        diceValue = Math.floor(Math.random() * 6) + 1;
+                    }
+
+                    if (GameState.status.doubleDice) {
+                        diceValue *= 2;
+                        GameState.status.doubleDice = false;
+                        Renderer.logEvent(`☄️ 重力彈弓發動！點數加倍，最終擲出了 ${diceValue} 點！`, true);
+                    } else if (!isCheese && !isSick) {
+                        Renderer.logEvent(`擲出了 ${diceValue} 點！`, true);
+                    }
+                }
+
+                GameState.passedStart = false;
+                this.moveSteps(diceValue);
+            },
+
+            moveSteps: function (steps, speed = 300, isReverse = false) {
+                GameState.isMoving = true;
+                let currentStep = 0;
+
+                const moveInterval = setInterval(() => {
+                    if (isReverse) {
+                        GameState.playerPos = (GameState.playerPos - 1 + MAP_SIZE) % MAP_SIZE;
+                    } else {
+                        GameState.playerPos = (GameState.playerPos + 1) % MAP_SIZE;
+                    }
+
+                    Renderer.updatePlayerPosition(GameState.playerPos);
+
+                    if (GameState.playerPos === 0 && !isReverse) {
+                        GameState.passedStart = true;
+                        this.processStartPassing();
+                    }
+
+                    currentStep++;
+                    if (currentStep >= steps) {
+                        clearInterval(moveInterval);
+                        GameState.isMoving = false;
+                        setTimeout(() => this.triggerEvent(GameState.playerPos), 400);
+                    }
+                }, speed);
+            },
+
+            processStartPassing: function () {
+                GameState.stats.totalLoops++;
+                Renderer.logEvent("經過大熊座！獲得熊爸熊媽的旅費支援 +200 碎片", true);
+
+                const pulsarFeeds = GameState.storyProgress[20] || 0;
+                if (!GameState.flags.pulsarGoodEnding && !GameState.flags.pulsarBadEnding && pulsarFeeds < 3) {
+                    GameState.flags.pulsarEnergy--;
+                    if (GameState.flags.pulsarEnergy <= 0) {
+                        GameState.flags.pulsarBadEnding = true;
+                        GameState.pendingPulsarModal = true;
+                        Renderer.logEvent("⚠️ 黑寡婦脈衝星的伴星失去了光芒...", false);
+                    } else {
+                        Renderer.logEvent(`⚠️ 黑寡婦脈衝星持續吸取能量... (伴星剩餘能量: ${GameState.flags.pulsarEnergy})`, false);
+                    }
+                    Renderer.updateMapVisuals();
+                }
+
+                this.modifyShards(200);
+            },
+
+            triggerEvent: function (posIndex) {
+                if (GameState.pendingPulsarModal) {
+                    GameState.pendingPulsarModal = false;
+                    const desc = `
+                        <p class="text-red-400 text-2xl font-bold mb-3">伴星的殞落</p>
+                        <p class="text-gray-200 text-lg">因為長期遭受掠奪，黑寡婦脈衝星的伴星永遠失去了光芒...</p>
+                        <p class="text-gray-400 text-sm mt-3">黑寡婦脈衝星變得極度飢餓，未來若停留在該處將被強行掠奪星光碎片！</p>
+                    `;
+                    const actions = `<button onclick="GameLogic.triggerEvent(${posIndex})" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition shadow-lg">這也是無可奈何的...</button>`;
+                    Renderer.showModal("星系警告", desc, "⚠️", actions);
+                    return;
+                }
+
+                const shardIdx = GameState.mapAttachments.findIndex(a => a.pos === posIndex && a.type === 'shard');
+                if (shardIdx !== -1) {
+                    const attachment = GameState.mapAttachments.splice(shardIdx, 1)[0];
+                    Renderer.updateMapVisuals();
+                    const desc = `<p class="text-yellow-300 text-2xl font-bold mb-3">發現了星光碎片！</p><p class="text-gray-200 text-lg">大球在路途中收集到了命運遺留的星光碎片！<br><span class="text-yellow-400 font-bold font-mono">+${attachment.amt} 碎片</span></p>`;
+                    const actions = `<button onclick="GameLogic.modifyShards(${attachment.amt}, () => GameLogic.triggerEvent(${posIndex}))" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition">收下碎片</button>`;
+                    Renderer.showModal("意外之財", desc, "⭐", actions);
+                    return;
+                }
+
+                const bhIdx = GameState.mapAttachments.findIndex(a => a.pos === posIndex && a.type === 'blackhole');
+                if (bhIdx !== -1) {
+                    const attachment = GameState.mapAttachments[bhIdx];
+                    const desc = `<p class="text-red-400 text-2xl font-bold mb-3">遭遇黑洞！</p><p class="text-gray-200 text-lg">大球不小心捲入了坍縮的黑洞中，損失了大量碎片！<br><span class="text-red-400 font-bold font-mono">${attachment.amt} 碎片</span></p>`;
+                    const actions = `<button onclick="GameLogic.modifyShards(${attachment.amt}, () => GameLogic.triggerCellNormalEffect(${posIndex}))" class="w-full bg-red-600 hover:bg-red-500 py-4 rounded-xl font-bold text-xl transition">可惡...</button>`;
+                    Renderer.showModal("引力危機", desc, "🕳️", actions);
+                    return;
+                }
+
+                this.triggerCellNormalEffect(posIndex);
+            },
+
+            triggerCellNormalEffect: function (posIndex) {
+                const cell = MapData[posIndex];
+
+                const isClosed = GameState.currentTurn < GameState.status.parkOpenAt;
+                const closedCells = [2, 4, 9, 13, 20, 21, 25];
+                if (isClosed && closedCells.includes(cell.id)) {
+                    Renderer.logEvent(`大球停在了【${cell.name}】(休園中)`);
+                    const desc = `<p class="text-gray-400 text-lg">目前是宇宙休息日，【${cell.name}】暫停開放營業...<br>大球在這裡撲了個空，什麼也沒做，只好繼續等待下一次出發。</p>`;
+                    const actions = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-gray-600 hover:bg-gray-500 py-3 rounded-xl font-bold text-lg transition">摸摸鼻子離開</button>`;
+                    Renderer.showModal("景區休園中", desc, "💤", actions);
+                    return;
+                }
+
+                Renderer.logEvent(`大球停在了【${cell.name}】`);
+                GameState.pendingBankModal = GameState.pendingBankModal || GameState.passedStart;
+                GameState.passedStart = false;
+
+                if (cell.type === 'start') {
+                    const startDesc = `<p class="text-green-400 text-xl font-bold mb-3">回到故鄉大熊座！</p><p class="text-gray-200 text-base">熊爸熊媽準備了豐盛的大餐，大球感到無比溫暖。</p>`;
+                    const startActions = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-lg transition">繼續</button>`;
+                    Renderer.showModal("抵達大熊座", startDesc, cell.icon, startActions);
+                } else if (cell.type === 'corner') {
+                    if (cell.id === 7) {
+                        const wormholeDesc = `<p class="text-red-400 text-lg mb-2">大球受到黑洞的引力影響，進行強制跳躍！</p><p class="text-gray-400 text-sm">（旅途顛簸，擲出的點數越大，遺失的碎片越多喔）</p>`;
+                        const wormholeActions = `<button onclick="GameLogic.executeWormholeJump()" class="w-full bg-purple-600 hover:bg-purple-500 py-4 rounded-xl font-bold shadow-[0_0_20px_purple] text-xl transition transform hover:scale-105">🎲 擲骰並強制躍遷！</button>`;
+                        Renderer.showModal(cell.name, wormholeDesc, cell.icon, wormholeActions);
+                    } else if (cell.id === 21) {
+                        const parkDesc = `<p class='text-pink-300 text-xl mb-2'>大球在這裡獲得了充分的休息！</p><p class='text-gray-300 text-base leading-relaxed'>進入【星輝斑斕】狀態：<br>下一次踩到普通格子或卡片時，獲得碎片 <span class="text-yellow-400 font-bold">1.5 倍</span>，扣除碎片 <span class="text-green-400 font-bold">減半</span>！</p>`;
+                        const parkActions = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-pink-600 hover:bg-pink-500 py-3 rounded-xl font-bold text-lg mt-2 transition">太棒了！</button>`;
+                        GameState.status.rested = true;
+                        Renderer.updateUIStats();
+                        Renderer.showModal(cell.name, parkDesc, cell.icon, parkActions);
+                    }
+                } else if (cell.type === 'goal') {
+                    const total = GameState.assets.hand + GameState.assets.bank + GameState.assets.invest;
+                    if (total >= GameState.assets.target) {
+                        Renderer.logEvent("🎉 總資產達標並親自抵達太陽系！觸發勝利條件！", true);
+                        setTimeout(() => GameLogic.forceWin(), 500);
+                        return;
+                    }
+
+                    let shuffled = [...SolarLivestreamDatabase];
+                    for (let i = shuffled.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                    }
+                    GameState.currentSolarOptions = shuffled.slice(0, 4);
+
+                    let buttonsHtml = GameState.currentSolarOptions.map(opt =>
+                        `<button onclick="GameLogic.resolveSolarSystem('${opt.id}')" class="bg-gray-700 hover:bg-gray-600 py-4 rounded-lg font-bold text-lg shadow-md transition border border-gray-500">${opt.icon} ${opt.name}</button>`
+                    ).join('');
+
+                    const solarDesc = `<p class="text-yellow-300 text-xl mb-2">來太陽系和伴星們見面啦！</p><p class="text-gray-200 text-base mb-4">大家想看大球進行哪一種直播呢？</p>`;
+                    const solarActions = `<div class="grid grid-cols-2 gap-3 w-full">${buttonsHtml}</div>`;
+                    Renderer.showModal("抵達太陽系", solarDesc, cell.icon, solarActions);
+                } else if (cell.type === 'event') {
+                    this.executeNormalEvent(cell);
+                } else if (cell.type === 'card') {
+                    if (cell.name === '機會') {
+                        this.executeChanceCard(cell);
+                    } else {
+                        this.executeFateCard(cell);
+                    }
+                }
+            },
+
+            executeNormalEvent: function (cell) {
+                const eventData = NormalEventsDatabase[cell.id];
+                if (!eventData) return this.closeCellModal();
+
+                if (eventData.isMultiStage) {
+                    this.executeMultiStageEvent(cell, eventData);
+                } else {
+                    let finalAmt = this.applyRestedBuff(eventData.amt);
+                    let buffText = this.getBuffText(eventData.amt, finalAmt);
+
+                    const desc = `
+                        <p class='text-gray-200 text-lg mb-4'>${eventData.desc}</p>
+                        ${finalAmt !== 0 ? `<p class='text-xl ${finalAmt > 0 ? 'text-green-400' : 'text-red-400'} font-bold font-mono'>${finalAmt > 0 ? '+' : ''}${finalAmt} 碎片</p>` : ''}
+                        ${buffText}
+                    `;
+                    const actions = `<button onclick="GameLogic.resolveNormalEvent(${finalAmt}, '${eventData.special}')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-lg transition">繼續旅程</button>`;
+
+                    Renderer.showModal(cell.name, desc, cell.icon, actions);
+                }
+            },
+
+            executeMultiStageEvent: function (cell, eventData) {
+                if (GameState.storyProgress[cell.id] === undefined) {
+                    GameState.storyProgress[cell.id] = 0;
+                }
+
+                this.currentStoryCell = cell;
+                this.currentStoryData = eventData;
+                this.viewingStoryIndex = Math.min(GameState.storyProgress[cell.id], eventData.stages.length - 1);
+
+                this.renderStoryModal();
+            },
+
+            viewStoryPage: function (offset) {
+                const maxStage = this.currentStoryData.stages.length - 1;
+                this.viewingStoryIndex += offset;
+                if (this.viewingStoryIndex < 0) this.viewingStoryIndex = 0;
+                if (this.viewingStoryIndex > maxStage) this.viewingStoryIndex = maxStage;
+                this.renderStoryModal();
+            },
+
+            renderStoryModal: function () {
+                const cell = this.currentStoryCell;
+                const eventData = this.currentStoryData;
+                const actualProgress = GameState.storyProgress[cell.id] || 0;
+                const maxStage = eventData.stages.length - 1;
+
+                const stageData = eventData.stages[this.viewingStoryIndex];
+
+                const isCurrent = (this.viewingStoryIndex === actualProgress) ||
+                    (stageData.isRepeatable && this.viewingStoryIndex === maxStage && actualProgress >= maxStage);
+                const isLocked = this.viewingStoryIndex > actualProgress;
+                const isPast = this.viewingStoryIndex < actualProgress && !isCurrent;
+
+                let cardContent = '';
+                let actionsHtml = '';
+                let customOverride = false;
+
+                if (!isLocked) {
+                    if (stageData.customId === 'creation_1') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球第一次來到恆星育幼院，不小心被熱情的小球們衝撞淹沒了！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">創生之柱是許多恆星的誕生地，因此這裡也有聞名銀河系的恆星育幼院。<br><br>大球，你要進去育幼院參觀看看嗎？</p>
+                                </div>
+                            `;
+                            actionsHtml = `
+                                <div class="flex space-x-3 w-full mt-2">
+                                    <button onclick="GameLogic.rejectCreation()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-500">先不要好了 (+0 碎片)</button>
+                                    <button onclick="GameLogic.acceptCreation1()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400">進去參觀</button>
+                                </div>
+                            `;
+                        }
+                    }
+                    else if (stageData.customId === 'creation_2') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球經過和教育人員的交流，終於學會了怎麼跟小球們相處！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球再次來到了恆星育幼院的門口。<br><br>大球，這次準備好進去和小球們互動了嗎？</p>
+                                </div>
+                            `;
+                            actionsHtml = `
+                                <div class="flex space-x-3 w-full mt-2">
+                                    <button onclick="GameLogic.rejectCreation()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-500">下次再說 (+0 碎片)</button>
+                                    <button onclick="GameLogic.acceptCreation2()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400">進去參觀</button>
+                                </div>
+                            `;
+                        }
+                    }
+                    else if (stageData.customId === 'creation_3') {
+                        customOverride = true;
+                        if (isCurrent) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球再度來到育幼院陪伴小球們！<br><br>小球們現在都超級喜歡大球，大家要一起玩什麼呢？</p>
+                                </div>
+                            `;
+                            actionsHtml = `
+                                <div class="grid grid-cols-2 gap-3 w-full mt-2">
+                                    <button onclick="GameLogic.playWithKids('畫畫塗鴉')" class="bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-lg transition border border-blue-400 shadow-md">🎨 畫畫塗鴉 (+50)</button>
+                                    <button onclick="GameLogic.playWithKids('翹翹板')" class="bg-pink-600 hover:bg-pink-500 py-4 rounded-xl font-bold text-lg transition border border-pink-400 shadow-md">⚖️ 翹翹板 (+50)</button>
+                                    <button onclick="GameLogic.playWithKids('滾來滾去')" class="bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-lg transition border border-green-400 shadow-md">⚽ 滾來滾去 (+50)</button>
+                                    <button onclick="GameLogic.playWithKids('說故事')" class="bg-purple-600 hover:bg-purple-500 py-4 rounded-xl font-bold text-lg transition border border-purple-400 shadow-md">📖 說故事 (+50)</button>
+                                </div>
+                                <button onclick="GameLogic.rejectCreation()" class="w-full bg-gray-600 hover:bg-gray-500 py-3 mt-3 rounded-xl font-bold transition border border-gray-500">先離開 (+0 碎片)</button>
+                            `;
+                        } else {
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        }
+                    }
+                    else if (stageData.customId === 'vega_1') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球先前已經答應了織女星，會幫忙尋找走失的喜鵲！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">煩惱的織女星告訴大球，幫忙搭橋的喜鵲不知道跑到哪裡去了，牛郎星還在對面等著呢！<br><br>大球，你要幫忙到處找找嗎？</p>
+                                </div>
+                            `;
+                            actionsHtml = `<button onclick="GameLogic.acceptVegaQuest()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">答應尋找 (+0 碎片)</button>`;
+                        }
+                    } else if (stageData.customId === 'vega_2') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球吹響了「紀念哨子」，成功將走失的喜鵲全數召喚了回來！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            if (GameState.inventory['whistle'] > 0) {
+                                cardContent = `
+                                    <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                        <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                        <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">每次經過織女星，她總會焦急地問有沒有找到喜鵲。<br><br>大球突然想起了背包裡的<span class="text-yellow-400 font-bold">「紀念哨子」</span>！要吹響看看嗎？</p>
+                                    </div>
+                                `;
+                                actionsHtml = `
+                                    <div class="flex space-x-4 w-full mt-2">
+                                        <button onclick="GameLogic.closeCellModal()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-400">先不要 (+0 碎片)</button>
+                                        <button onclick="GameLogic.blowWhistleForVega()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">吹響哨子 (+0 碎片)</button>
+                                    </div>
+                                `;
+                            } else {
+                                cardContent = `
+                                    <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                        <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                        <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">每次經過織女星，她總會焦急地問有沒有找到喜鵲。<br><br>但大球目前毫無頭緒，只能無奈地搖搖頭...</p>
+                                    </div>
+                                `;
+                                actionsHtml = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">還沒找到... (+0 碎片)</button>`;
+                            }
+                        }
+                    }
+                    else if (stageData.customId === 'andromeda_2') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球先前挺身而出擔任了交通志工，雖然累翻了，但成功緩解了仙女座的交通壅塞！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">仙女座的交通依然一團亂！交通隊長焦頭爛額地跑來詢問：<br><br>「大球！我們人手嚴重不足，你願意留下來擔任交通志工幫忙指揮嗎？」</p>
+                                </div>
+                            `;
+                            actionsHtml = `
+                                <div class="flex space-x-4 w-full mt-2">
+                                    <button onclick="GameLogic.rejectAndromeda()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-400">拒絕並繞路 (-200 碎片)</button>
+                                    <button onclick="GameLogic.volunteerAndromeda()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">擔任志工 (-200 碎片)</button>
+                                </div>
+                            `;
+                        }
+                    }
+                    else if (stageData.customId === 'pulsar_main') {
+                        customOverride = true;
+                        if (GameState.flags.pulsarBadEnding) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-red-400 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-red-500/30 pb-3">飢餓的脈衝星</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">伴星已經徹底失去光芒...<br><br>極度飢餓的黑寡婦脈衝星毫不留情地向大球襲來，強行掠奪了大量的星光碎片！</p>
+                                </div>
+                            `;
+                            actionsHtml = `<button onclick="GameLogic.payPulsarPenalty()" class="w-full bg-red-600 hover:bg-red-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(239,68,68,0.5)] border border-red-400">被強制掠奪 (-400 碎片)</button>`;
+                        } else if (GameState.flags.pulsarGoodEnding || (GameState.storyProgress[20] || 0) >= 3) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-green-400 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-green-500/30 pb-3">滿足的脈衝星</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">因為大球先前的慷慨餵食，黑寡婦脈衝星現在感到非常滿足，靜靜地在宇宙中旋轉。<br><br>她的伴星也因此得以喘息，散發著微弱但穩定的光芒。</p>
+                                </div>
+                            `;
+                            if (!GameState.flags.pulsarGoodEnding) {
+                                actionsHtml = `<button onclick="GameLogic.confirmPulsarGoodEnding()" class="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(74,222,128,0.5)] border border-green-400">確認平安 (+0 碎片)</button>`;
+                            } else {
+                                actionsHtml = `<button onclick="GameLogic.ignorePulsar()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400">平安通過 (+0 碎片)</button>`;
+                            }
+                        } else {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">黑寡婦脈衝星</h4>
+                                    <p class="text-gray-200 text-lg mb-4 text-left w-full px-2">這是一顆會不斷吸取伴星能量的可怕星體！<br><br>眼看伴星的光芒越來越微弱 <span class="text-pink-400 font-bold">(剩餘能量: ${GameState.flags.pulsarEnergy})</span>...你要使用自己的星光碎片來餵食脈衝星，以減輕伴星的負擔嗎？</p>
+                                </div>
+                            `;
+                            actionsHtml = `
+                                <div class="flex space-x-3 w-full mt-2">
+                                    <button onclick="GameLogic.ignorePulsar()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-500">無視離開 (+0 碎片)</button>
+                                    <button onclick="GameLogic.feedPulsar()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400">餵食星體 (-200 碎片)</button>
+                                </div>
+                            `;
+                        }
+
+                        const customDescHtml = `
+                            <div class="bg-gray-800/80 p-6 rounded-2xl border-2 ${GameState.flags.pulsarBadEnding ? 'border-red-400/50' : (GameState.flags.pulsarGoodEnding || (GameState.storyProgress[20] || 0) >= 3 ? 'border-green-400/50' : 'border-indigo-400/50')} shadow-inner flex flex-col items-center justify-start w-full relative overflow-hidden">
+                                ${cardContent}
+                            </div>
+                        `;
+                        Renderer.showModal(cell.name, customDescHtml, cell.icon, actionsHtml, true);
+                        return;
+                    }
+                    else if (stageData.customId === 'leo_1') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球先前利用了槓桿原理，成功將掉進深坑的五帝座一皇子給救了出來！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球在花園散步時，發現獅子座的皇子「五帝座一」不小心掉到大洞裡了！<br><br>因為五帝座一的質量實在太大了，其他恆星大球怎麼拉都拉不動他...</p>
+                                </div>
+                            `;
+                            actionsHtml = `
+                                <div class="flex space-x-4 w-full mt-2">
+                                    <button onclick="GameLogic.rejectLeo()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-400">無視離開 (+0 碎片)</button>
+                                    <button onclick="GameLogic.rescueLeo()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">利用槓桿原理 (+0 碎片)</button>
+                                </div>
+                            `;
+                        }
+                    }
+                    else if (stageData.customId === 'cancer_2') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球先前利用「海克力士勳章」的威嚴，成功讓巨蟹座取消了黑名單與過路費！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            if (GameState.inventory['hercules_medal'] > 0) {
+                                cardContent = `
+                                    <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                        <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                        <p class="text-gray-200 text-lg mb-4 text-left w-full px-2">巨蟹座的守衛拿著帳單準備向你收取過路費...</p>
+                                        <p class="text-yellow-300 font-bold text-xl mb-3 animate-pulse text-center w-full">等等！他們看到了你身上的「海克力士勳章」！</p>
+                                        <p class="text-gray-400 text-sm text-left w-full px-2">巨蟹座作為武仙座的藩屬星座，守衛嚇得立刻撕毀了帳單，並將你從黑名單移除！</p>
+                                    </div>
+                                `;
+                                actionsHtml = `<button onclick="GameLogic.cancerUnlock()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400">大搖大擺地進入 (+0 碎片)</button>`;
+                            } else {
+                                cardContent = `
+                                    <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                        <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                        <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">因為之前輾壞衛星的惡行，大球被巨蟹座列入了黑名單！<br><br>現在每次經過巨蟹座，都必須繳交 <span class="text-red-400 font-bold">200 碎片</span> 的過路費...</p>
+                                    </div>
+                                `;
+                                actionsHtml = `<button onclick="GameLogic.payCancerToll()" class="w-full bg-red-600 hover:bg-red-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-red-400 shadow-[0_0_15px_rgba(248,113,113,0.4)]">繳交過路費 (-200 碎片)</button>`;
+                            }
+                        }
+                    }
+                    else if (stageData.customId === 'gemini_1') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球先前交出了「星光糖果」，成功安撫了調皮的雙子星！這份恩情他們一直記在心裡。</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            if (GameState.inventory['candy'] > 0) {
+                                cardContent = `
+                                    <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                        <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                        <p class="text-gray-200 text-lg mb-4 text-left w-full px-2">遭到雙子的惡作劇，正打算把你當玩具推來推去...</p>
+                                        <p class="text-yellow-300 font-bold text-xl mb-3 animate-pulse text-center w-full">等等！他們盯上了你背包裡的「星光糖果」！</p>
+                                        <p class="text-gray-400 text-sm text-center w-full">要交出糖果來安撫這對調皮的雙胞胎嗎？</p>
+                                    </div>
+                                `;
+                                actionsHtml = `
+                                    <div class="flex space-x-3 w-full mt-2">
+                                        <button onclick="GameLogic.pacifyGemini()" class="flex-1 bg-pink-600 hover:bg-pink-500 py-4 rounded-xl font-bold text-xl transition shadow-[0_0_15px_rgba(236,72,153,0.5)] border border-pink-400">🍬 給予糖果 (-1 糖果)</button>
+                                        <button onclick="GameLogic.rejectGemini()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-500">不給 (+0 碎片)</button>
+                                    </div>
+                                `;
+                            } else {
+                                cardContent = `
+                                    <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                        <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                        <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">遭到雙子的惡作劇，大球被當玩具推來推去！<br><br><span class='text-purple-400 font-bold'>(大球被迫隨機移動...)</span></p>
+                                    </div>
+                                `;
+                                actionsHtml = `<button onclick="GameLogic.rejectGemini()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">繼續旅程</button>`;
+                            }
+                        }
+                    } else if (stageData.customId === 'gemini_2') {
+                        customOverride = true;
+                        if (isCurrent) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">「大球大球！這次要去哪裡？我們用引力送你一程吧！」<br><br>雙子星因為之前的星光糖果心情大好，主動提出要幫忙傳送！</p>
+                                </div>
+                            `;
+                            actionsHtml = `<div class="grid grid-cols-2 gap-3 w-full mt-2">`;
+                            for (let i = 1; i <= 3; i++) {
+                                let forwardId = (GameState.playerPos + i) % 28;
+                                actionsHtml += `<button onclick="GameLogic.executeGeminiTeleport(${i}, false)" class="bg-indigo-600 hover:bg-indigo-500 py-3 px-2 rounded-xl font-bold transition border border-indigo-400 text-sm flex flex-col items-center justify-center"><span>【${MapData[forwardId].name}】</span><span class="text-xs opacity-75 font-normal mt-1">(前進 ${i} 格)</span></button>`;
+                            }
+                            for (let i = 1; i <= 3; i++) {
+                                let backwardId = (GameState.playerPos - i + 28) % 28;
+                                actionsHtml += `<button onclick="GameLogic.executeGeminiTeleport(${i}, true)" class="bg-pink-600 hover:bg-pink-500 py-3 px-2 rounded-xl font-bold transition border border-pink-400 text-sm flex flex-col items-center justify-center"><span>【${MapData[backwardId].name}】</span><span class="text-xs opacity-75 font-normal mt-1">(後退 ${i} 格)</span></button>`;
+                            }
+                            actionsHtml += `</div><button onclick="GameLogic.cancelGeminiTeleport()" class="w-full bg-gray-600 hover:bg-gray-500 py-3 mt-3 rounded-xl font-bold transition border border-gray-500">不用了，留在原地 (+0 碎片)</button>`;
+                        } else {
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        }
+                    }
+                    else if (stageData.customId === 'virgo_1') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球先前成功幫助角宿一解決了 Nebula-Script 的引力變數溢位問題，成為了她的好朋友！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            if (GameState.flags.virgoQuizActive) {
+                                cardContent = `
+                                    <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                        <h4 class="text-yellow-300 font-extrabold text-xl mb-3 text-center tracking-wide w-full border-b border-indigo-500/30 pb-2">在這段 Nebula-Script 程式碼中，<br>為什麼星核無法點火？</h4>
+                                        
+                                        <div class="w-full bg-black/90 rounded-lg p-4 mb-1 font-mono text-sm sm:text-base text-left border border-gray-600 overflow-x-auto shadow-inner leading-relaxed">
+                                            <span class="text-green-400">// Nebula-Script v1.4 星核點火程序</span><br>
+                                            <span class="text-purple-400">func</span> <span class="text-blue-300">IgniteStarCore</span>() {<br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">let</span> gravity_field: <span class="text-yellow-300">Int16</span> = <span class="text-orange-300">30000</span>;<br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">let</span> star_mass: <span class="text-yellow-300">Int16</span> = <span class="text-orange-300">5000</span>;<br><br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-green-400">// 計算臨界點火值</span><br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">let</span> ignition_threshold = gravity_field + star_mass;<br><br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-pink-400">if</span> (ignition_threshold > <span class="text-orange-300">32000</span>) {<br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Core.<span class="text-blue-300">ignite</span>();<br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;} <span class="text-pink-400">else</span> {<br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Core.<span class="text-blue-300">fail</span>();<br>
+                                            &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                                            }
+                                        </div>
+                                    </div>
+                                `;
+                                actionsHtml = `
+                                    <div class="text-left w-full space-y-2 mt-2">
+                                        <button onclick="GameLogic.answerVirgo(true)" class="w-full bg-blue-600 hover:bg-blue-500 py-2 px-4 rounded-xl font-bold transition border border-blue-400 text-left text-sm md:text-base">A. 引力變數發生了數值溢位 (Overflow)</button>
+                                        <button onclick="GameLogic.answerVirgo(false)" class="w-full bg-pink-600 hover:bg-pink-500 py-2 px-4 rounded-xl font-bold transition border border-pink-400 text-left text-sm md:text-base">B. 迴圈內忘了加分號</button>
+                                        <button onclick="GameLogic.answerVirgo(false)" class="w-full bg-teal-600 hover:bg-teal-500 py-2 px-4 rounded-xl font-bold transition border border-teal-400 text-left text-sm md:text-base">C. 缺少量子糾纏模組</button>
+                                        <button onclick="GameLogic.answerVirgo(false)" class="w-full bg-purple-600 hover:bg-purple-500 py-2 px-4 rounded-xl font-bold transition border border-purple-400 text-left text-sm md:text-base">D. 星塵型別不匹配</button>
+                                    </div>
+                                `;
+                            } else {
+                                cardContent = `
+                                    <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                        <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                        <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">路邊看到正在為星際終端機debug的角宿一，她使用的似乎是古老且神祕的星空語言「Nebula-Script」！<br><br>大球，你要試著幫忙她嗎？</p>
+                                    </div>
+                                `;
+                                actionsHtml = `
+                                    <div class="flex space-x-4 w-full mt-2">
+                                        <button onclick="GameLogic.rejectVirgo()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-400">悄悄離開 (+0 碎片)</button>
+                                        <button onclick="GameLogic.activateVirgoQuiz()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">幫忙debug (+0 碎片)</button>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }
+                    else if (stageData.customId === 'capricorn_2') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球先前選擇了熬夜趕工，成功準備好了 Merak16 的簡報與演講內容！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">距離年會只剩下沒多少時間了，大球卻還有許多資料沒有準備好...<br><br>大球現在焦急得像熱鍋上的螞蟻，接下來該怎麼做呢？</p>
+                                </div>
+                            `;
+                            actionsHtml = `
+                                <div class="flex space-x-3 w-full mt-2">
+                                    <button onclick="GameLogic.relaxAtCafe()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 px-2 rounded-xl font-bold text-lg transition border border-gray-500">☕ 去恆星咖啡廳放鬆 (+50 碎片)</button>
+                                    <button onclick="GameLogic.preparePresentation()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 px-2 rounded-xl font-bold text-lg transition shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400">💻 努力準備簡報 (-50 碎片)</button>
+                                </div>
+                            `;
+                        }
+                    }
+                    // --- 牡羊座客製化事件 (ID: 15) ---
+                    else if (stageData.customId === 'aries_4') {
+                        customOverride = true;
+                        if (isPast) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球先前在「宇宙方塊大賞」中成功擊倒各路恆星大球，奪得了總冠軍！</p>
+                                </div>
+                            `;
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        } else {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球參加了星際電競館舉辦的「宇宙方塊大賞」！<br><br>憑藉著精湛的技術，大球一路過關斬將，在總決賽成功擊倒各路恆星大球，奪得冠軍！</p>
+                                </div>
+                            `;
+                            actionsHtml = `<button onclick="GameLogic.winTetrisTournament()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">領取冠軍獎勵 (+500 碎片)</button>`;
+                        }
+                    } else if (stageData.customId === 'aries_5') {
+                        customOverride = true;
+                        if (isCurrent) {
+                            cardContent = `
+                                <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                    <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                    <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">每次走到牡羊座時，館長婁宿三總會熱情地拿出搖桿：<br><br>「大球！來一局激烈的俄羅斯方塊對決吧！」</p>
+                                </div>
+                            `;
+                            actionsHtml = `
+                                <div class="flex space-x-3 w-full mt-2">
+                                    <button onclick="GameLogic.rejectTetrisDuel()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-500">婉拒對戰 (+0 碎片)</button>
+                                    <button onclick="GameLogic.acceptTetrisDuel()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400">接受挑戰</button>
+                                </div>
+                            `;
+                        } else {
+                            const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                            actionsHtml = `<button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>`;
+                        }
+                    }
+                }
+
+                // --- 預設多階段卡片生成邏輯 ---
+                if (!customOverride) {
+                    if (isLocked) {
+                        cardContent = `
+                            <div class="flex flex-col items-center justify-center h-full text-gray-500 w-full min-h-[14rem]">
+                                <span class="text-6xl mb-4 opacity-50">🔒</span>
+                                <p class="text-xl font-bold">故事尚未解鎖</p>
+                                <p class="text-sm mt-2">請先完成前置階段以繼續探索</p>
+                            </div>
+                        `;
+                    } else {
+                        let imgHtml = '';
+                        if (stageData.imgPlaceholder) {
+                            imgHtml = `<div class="w-full h-32 bg-gray-900/60 border border-gray-600 rounded-lg flex items-center justify-center my-3 text-gray-400">
+                                <span class="text-3xl mr-2">🏆</span> 優勝插圖預留區
+                            </div>`;
+                        }
+
+                        let rewardHtml = '';
+                        if (stageData.rewardItem && isCurrent) {
+                            const item = ItemDatabase[stageData.rewardItem];
+                            rewardHtml = `<div class="mt-4 flex items-center justify-center bg-gray-900 px-4 py-2 rounded-lg border border-yellow-500/50">
+                                            <span class="mr-2 text-xl">${item.icon}</span>
+                                            <span class="text-yellow-300 font-bold text-sm">解鎖獎勵：${item.name}</span>
+                                          </div>`;
+                        }
+
+                        cardContent = `
+                            <div class="flex flex-col items-center justify-start h-full w-full min-h-[14rem]">
+                                <h4 class="text-yellow-300 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-indigo-500/30 pb-3">${stageData.title}</h4>
+                                ${imgHtml}
+                                <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">${stageData.desc}</p>
+                                ${rewardHtml}
+                            </div>
+                        `;
+                    }
+
+                    if (isCurrent) {
+                        if (stageData.amt < 0 && !stageData.mandatory) {
+                            actionsHtml = `
+                                <div class="flex space-x-4 w-full mt-2">
+                                    <button onclick="GameLogic.resolveMultiStageEvent(false)" class="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition border border-gray-400">下次再說 (+0 碎片)</button>
+                                    <button onclick="GameLogic.resolveMultiStageEvent(true)" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">${stageData.btnText}</button>
+                                </div>
+                            `;
+                        } else {
+                            actionsHtml = `
+                                <button onclick="GameLogic.resolveMultiStageEvent(true)" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">${stageData.btnText}</button>
+                            `;
+                        }
+                    } else {
+                        const returnOffset = Math.min(actualProgress, maxStage) - this.viewingStoryIndex;
+                        actionsHtml = `
+                            <button onclick="GameLogic.viewStoryPage(${returnOffset})" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">返回當前故事進度</button>
+                        `;
+                    }
+                }
+
+                // 結合輪播框架
+                const descHtml = `
+                    <div class="flex items-center justify-between w-full mb-4 px-2 select-none">
+                        <button onclick="GameLogic.viewStoryPage(-1)" class="p-3 bg-gray-800 hover:bg-gray-700 rounded-full transition shadow-md border border-gray-600 ${this.viewingStoryIndex === 0 ? 'opacity-30 cursor-not-allowed' : ''}">◀</button>
+                        <div class="text-lg font-bold text-indigo-300 tracking-widest bg-gray-900 px-6 py-2 rounded-full border border-indigo-500/50">階段 ${this.viewingStoryIndex + 1} / ${maxStage + 1}</div>
+                        <button onclick="GameLogic.viewStoryPage(1)" class="p-3 bg-gray-800 hover:bg-gray-700 rounded-full transition shadow-md border border-gray-600 ${this.viewingStoryIndex === maxStage ? 'opacity-30 cursor-not-allowed' : ''}">▶</button>
+                    </div>
+                    <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-indigo-400/50 shadow-inner flex flex-col items-center justify-start w-full relative overflow-hidden">
+                        ${isPast ? '<div class="absolute top-4 right-4 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/50">已完成 ✅</div>' : ''}
+                        ${cardContent}
+                    </div>
+                `;
+
+                Renderer.showModal(cell.name, descHtml, cell.icon, actionsHtml, true);
+            },
+
+            // --- 牡羊座方塊訓練之路事件邏輯 ---
+            winTetrisTournament: function () {
+                Renderer.hideModal();
+
+                // 將進度推至 4，以匹配最後一個階段的索引，這樣才能觸發接下來的 repeatable stage 並亮黃燈
+                GameState.storyProgress[15] = 4;
+                Renderer.updateMapVisuals();
+                Renderer.logEvent(`🏆 大球獲得了「宇宙方塊大賞」總冠軍！`, true);
+
+                this.gainItem('magic_dice', 1);
+                this.modifyShards(500, () => {
+                    setTimeout(() => {
+                        const desc = `<p class="text-yellow-300 text-xl font-bold mb-3">恭喜完成「方塊大師」故事線！</p><p class="text-gray-200 text-lg">電競館長婁宿三為了讚揚你的頂尖實力，特別贈送了一顆特級骰子給你！</p>`;
+                        const actions = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition">收下獎勵</button>`;
+                        Renderer.showModal("🏆 方塊大師", desc, "🧩", actions);
+                    }, 300);
+                });
+            },
+
+            rejectTetrisDuel: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`🧩 大球決定今天先休息，婉拒了婁宿三的對戰邀約。(無損失)`);
+
+                // 若剛進入最終階段，則將進度+1以確保地圖亮起綠燈
+                if (GameState.storyProgress[15] === 4) {
+                    GameState.storyProgress[15] = 5;
+                    Renderer.updateMapVisuals();
+                }
+                this.endTurn();
+            },
+
+            acceptTetrisDuel: function () {
+                Renderer.hideModal();
+                const isWin = Math.random() < 0.6; // 60% chance to win
+
+                // 若剛進入最終階段，則將進度+1以確保地圖亮起綠燈
+                if (GameState.storyProgress[15] === 4) {
+                    GameState.storyProgress[15] = 5;
+                    Renderer.updateMapVisuals();
+                }
+
+                setTimeout(() => {
+                    if (isWin) {
+                        const desc = `
+                            <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-green-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                                <h4 class="text-green-400 font-extrabold text-2xl mb-4 border-b border-green-500/30 pb-3 w-full text-center tracking-wide">對決勝利！</h4>
+                                <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球一記漂亮的中盤全清 (Perfect Clear) 加上連續 T-Spin，成功拿下了這局的勝利！<br><br>贏得了 60 碎片的賭注獎金！</p>
+                            </div>
+                        `;
+                        const actions = `<button onclick="Renderer.hideModal(); GameLogic.modifyShards(50, () => GameLogic.endTurn())" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400">太棒了！ (+60 碎片)</button>`;
+                        Renderer.showModal("方塊對決", desc, "🧩", actions, true);
+                        Renderer.logEvent(`🧩 大球贏得了與婁宿三的方塊對決！獲得 60 碎片！`, true);
+                    } else {
+                        const desc = `
+                            <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-red-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                                <h4 class="text-red-400 font-extrabold text-2xl mb-4 border-b border-red-500/30 pb-3 w-full text-center tracking-wide">對決敗北...</h4>
+                                <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">婁宿三的手速實在太快了，一波猛烈的攻勢直接將大球的場地填滿而頂死...<br><br>大球輸掉了 60 碎片。</p>
+                            </div>
+                        `;
+                        const actions = `<button onclick="Renderer.hideModal(); GameLogic.modifyShards(-50, () => GameLogic.endTurn())" class="w-full bg-red-600 hover:bg-red-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(239,68,68,0.4)] border border-red-400">可惡！ (-60 碎片)</button>`;
+                        Renderer.showModal("方塊對決", desc, "💥", actions, true);
+                        Renderer.logEvent(`🧩 大球輸掉了與婁宿三的方塊對決... 失去 60 碎片。`, false);
+                    }
+                }, 300);
+            },
+
+            // --- 其它既有特殊按鈕事件 ---
+            acceptVegaQuest: function () {
+                Renderer.hideModal();
+                GameState.storyProgress[4] = 1;
+                Renderer.updateMapVisuals();
+                Renderer.logEvent(`大球答應了織女星的請求，決定在宇宙中幫忙尋找喜鵲！`, true);
+                this.endTurn();
+            },
+
+            blowWhistleForVega: function () {
+                Renderer.hideModal();
+                setTimeout(() => {
+                    const desc = `
+                        <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-green-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                            <h4 class="text-green-400 font-extrabold text-2xl mb-4 border-b border-green-500/30 pb-3 w-full text-center tracking-wide">奇蹟發生！</h4>
+                            <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球用力吹響了仙女座的「紀念哨子」！<br><br>嗶——！清脆的哨音傳遍了星際，沒想到真的把走失的喜鵲們成群結隊地召喚回來了！<br><br>織女星與牛郎星終於能相會了！他們開心地塞給你 <span class="text-yellow-400 font-bold font-mono">200 碎片</span> 作為謝禮！</p>
+                        </div>
+                    `;
+                    const actions = `<button onclick="Renderer.hideModal(); GameLogic.modifyShards(200, () => GameLogic.finishVegaWhistle())" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400">太棒了！ (+200 碎片)</button>`;
+                    Renderer.showModal("織女星", desc, "🐦", actions, true);
+                }, 300);
+            },
+
+            finishVegaWhistle: function () {
+                Renderer.hideModal();
+                GameState.storyProgress[4] = 2;
+                Renderer.updateMapVisuals();
+                Renderer.logEvent(`✨ 吹響哨子召喚了喜鵲！織女星與牛郎星終於重逢了！`, true);
+
+                if (!GameState.flags.rewardedVega) {
+                    GameState.flags.rewardedVega = true;
+                    setTimeout(() => {
+                        this.gainItem('magic_dice', 1);
+                        const desc = `<p class="text-yellow-300 text-xl font-bold mb-3">恭喜完成仙女-織女故事線，獲得特級骰子一枚！</p><p class="text-gray-200 text-lg">牛郎星與織女星為了感謝你找回喜鵲，贈送了你一顆特級骰子！</p>`;
+                        const actions = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition">收下獎勵</button>`;
+                        Renderer.showModal("故事完成", desc, "🎲", actions);
+                    }, 300);
+                } else {
+                    this.endTurn();
+                }
+            },
+
+            rejectCreation: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`大球決定不打擾育幼院的小球們，悄悄離開了。(無損失)`);
+                this.endTurn();
+            },
+
+            acceptCreation1: function () {
+                Renderer.hideModal();
+                setTimeout(() => {
+                    const desc = `
+                        <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-red-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                            <h4 class="text-red-400 font-extrabold text-2xl mb-4 border-b border-red-500/30 pb-3 w-full text-center tracking-wide">被淹沒的大球！</h4>
+                            <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球滿懷期待地滾進育幼院，結果立刻被一大群精力充沛的新生小球包圍！<br><br>「哇！好大顆的球！」小球們興奮地全速衝撞過來，大球瞬間被滿滿的小球給淹沒，在混亂中遺失了許多碎片...</p>
+                        </div>
+                    `;
+                    const actions = `<button onclick="Renderer.hideModal(); GameLogic.modifyShards(-250, () => { GameState.storyProgress[2] = 1; Renderer.updateMapVisuals(); GameLogic.endTurn(); })" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400">好痛！ (-250 碎片)</button>`;
+                    Renderer.showModal("恆星育幼院", desc, "💥", actions, true);
+                }, 300);
+            },
+
+            acceptCreation2: function () {
+                Renderer.hideModal();
+                setTimeout(() => {
+                    const desc = `
+                        <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-green-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                            <h4 class="text-green-400 font-extrabold text-2xl mb-4 border-b border-green-500/30 pb-3 w-full text-center tracking-wide">交流與學習</h4>
+                            <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">有了上次被撞飛的經驗，大球這次學聰明了，先找到了育幼院的教育人員請教。<br><br>經過一番深刻的交流，大球終於掌握了控制自身引力、與小球們溫和互動的訣竅，知道該怎麼跟這群活力充沛的孩子們相處了！</p>
+                        </div>
+                    `;
+                    const actions = `<button onclick="Renderer.hideModal(); GameState.storyProgress[2] = 2; Renderer.updateMapVisuals(); GameLogic.endTurn();" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(99,102,241,0.4)] border border-indigo-400">太棒了！ (+0 碎片)</button>`;
+                    Renderer.showModal("恆星育幼院", desc, "✨", actions, true);
+                }, 300);
+            },
+
+            playWithKids: function (actionName) {
+                Renderer.hideModal();
+
+                setTimeout(() => {
+                    let actionDesc = "";
+                    if (actionName === '畫畫塗鴉') actionDesc = "大球和小球們用星塵在宇宙畫布上盡情揮灑，畫出了一道道五彩繽紛的美麗星軌！";
+                    if (actionName === '翹翹板') actionDesc = "大球利用自己的質量優勢和小球們玩星際翹翹板，其中一邊坐著大球，另一邊坐著幾十顆小球，歡笑聲傳遍了整個星雲！";
+                    if (actionName === '滾來滾去') actionDesc = "大球帶著小球們在軟綿綿的星雲氣體中滾來滾去，像是在巨大的棉花糖裡游泳，大家玩得不亦樂乎！";
+                    if (actionName === '說故事') actionDesc = "大球溫柔地講述著從大熊座出發的精彩冒險故事，小球們聽得津津有味，眼睛閃閃發光！";
+
+                    const desc = `
+                        <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-pink-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                            <h4 class="text-pink-400 font-extrabold text-2xl mb-4 border-b border-pink-500/30 pb-3 w-full text-center tracking-wide">開心的遊玩時光</h4>
+                            <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">${actionDesc}<br><br>大球現在已經是個超級受歡迎的稱職孩子王了！</p>
+                        </div>
+                    `;
+                    const actions = `<button onclick="Renderer.hideModal(); GameLogic.modifyShards(50, () => { GameLogic.endTurn(); })" class="w-full bg-pink-600 hover:bg-pink-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(236,72,153,0.5)] border border-pink-400">溫馨的時光 (+50 碎片)</button>`;
+
+                    if (GameState.storyProgress[2] === 2) {
+                        GameState.storyProgress[2] = 3;
+                        Renderer.updateMapVisuals();
+                    }
+
+                    Renderer.showModal("恆星育幼院", desc, "💖", actions, true);
+                }, 300);
+            },
+
+            rejectAndromeda: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`大球拒絕了擔任志工，無奈地繳交了 200 碎片繞路費...`);
+                this.modifyShards(-200, () => {
+                    this.endTurn();
+                });
+            },
+
+            volunteerAndromeda: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`大球挺身而出擔任交通志工！指揮了一整天累翻了，消耗了 200 碎片...`, true);
+                this.modifyShards(-200, () => {
+                    GameState.storyProgress[9] = 2;
+                    Renderer.updateMapVisuals();
+                    this.endTurn();
+                });
+            },
+
+            ignorePulsar: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`大球決定不插手黑寡婦脈衝星的家務事。(無損失)`);
+                this.endTurn();
+            },
+
+            feedPulsar: function () {
+                Renderer.hideModal();
+                this.modifyShards(-200, () => {
+                    if (GameState.storyProgress[20] === undefined) GameState.storyProgress[20] = 0;
+                    GameState.storyProgress[20]++;
+
+                    GameState.flags.pulsarEnergy += 3;
+
+                    if (GameState.storyProgress[20] >= 3) {
+                        Renderer.logEvent(`🍬 大球餵食了黑寡婦脈衝星！(已餵食 3/3 次，下一次經過時將親眼確認狀態)`, true);
+                    } else {
+                        Renderer.logEvent(`🍬 大球餵食了黑寡婦脈衝星，伴星能量恢復了！(已餵食 ${GameState.storyProgress[20]}/3 次，當前能量: ${GameState.flags.pulsarEnergy})`, true);
+                    }
+                    Renderer.updateMapVisuals();
+                    this.endTurn();
+                });
+            },
+
+            confirmPulsarGoodEnding: function () {
+                Renderer.hideModal();
+                GameState.flags.pulsarGoodEnding = true;
+                Renderer.updateMapVisuals();
+                Renderer.logEvent(`✨ 脈衝星徹底穩定了！不再掠奪能量！`, true);
+
+                if (!GameState.flags.rewardedPulsar) {
+                    GameState.flags.rewardedPulsar = true;
+                    setTimeout(() => {
+                        this.gainItem('magic_dice', 1);
+                        const desc = `<p class="text-yellow-300 text-xl font-bold mb-3">成功拯救脈衝星的伴星，獲得特級骰子一枚！</p><p class="text-gray-200 text-lg">黑寡婦脈衝星徹底穩定了！為了感謝你，她的伴星贈送了你一顆特級骰子！</p>`;
+                        const actions = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition">收下獎勵</button>`;
+                        Renderer.showModal("故事完成", desc, "🎲", actions);
+                    }, 300);
+                } else {
+                    this.endTurn();
+                }
+            },
+
+            payPulsarPenalty: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`💥 大球被飢餓的黑寡婦脈衝星強行掠奪了 400 碎片！`, true);
+                this.modifyShards(-400, () => {
+                    this.endTurn();
+                });
+            },
+
+            cancerUnlock: function () {
+                Renderer.hideModal();
+                GameState.storyProgress[10] = 2;
+                Renderer.updateMapVisuals();
+                Renderer.logEvent(`🏅 大球出示了「海克力士勳章」！巨蟹座嚇得移除了黑名單！`, true);
+
+                if (!GameState.flags.rewardedCancer) {
+                    GameState.flags.rewardedCancer = true;
+                    setTimeout(() => {
+                        this.gainItem('magic_dice', 1);
+                        const desc = `<p class="text-yellow-300 text-xl font-bold mb-3">恭喜完成獅子-巨蟹故事線，獲得特級骰子一枚！</p><p class="text-gray-200 text-lg">巨蟹座不僅移除了你的黑名單，還為了賠罪送上一顆特級骰子！</p>`;
+                        const actions = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition">收下獎勵</button>`;
+                        Renderer.showModal("故事完成", desc, "🎲", actions);
+                    }, 300);
+                } else {
+                    this.endTurn();
+                }
+            },
+
+            payCancerToll: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`🦀 大球乖乖繳交了 200 碎片過路費給巨蟹座...`);
+                this.modifyShards(-200, () => {
+                    this.endTurn();
+                });
+            },
+
+            pacifyGemini: function () {
+                Renderer.hideModal();
+                this.consumeItem('candy', 1);
+
+                GameState.storyProgress[18] = 1;
+                Renderer.updateMapVisuals();
+
+                Renderer.logEvent(`🍬 大球將「星光糖果」送給了雙子星！雙子星非常開心！`, true);
+
+                setTimeout(() => {
+                    const desc = `
+                        <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-green-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                            <h4 class="text-green-400 font-extrabold text-2xl mb-4 border-b border-green-500/30 pb-3 w-full text-center tracking-wide">恭喜完成處女-雙子故事線，獲得特級骰子一枚！</h4>
+                            <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">「謝謝你的糖果！這個亮晶晶的東西作為回禮送給你！」<br><br>你獲得了 300 碎片，並且雙子星還額外送了一枚特級骰子！</p>
+                        </div>
+                    `;
+                    const actions = `<button onclick="GameLogic.resolveGeminiReward()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 shadow-[0_0_15px_rgba(99,102,241,0.4)]">收下獎勵 (+300 碎片 & 骰子)</button>`;
+                    Renderer.showModal("雙子座", desc, "♊", actions, true);
+                }, 400);
+            },
+
+            resolveGeminiReward: function () {
+                if (!GameState.flags.rewardedGemini) {
+                    GameState.flags.rewardedGemini = true;
+                    this.gainItem('magic_dice', 1);
+                }
+                this.resolveNormalEvent(300, null);
+            },
+
+            rejectGemini: function () {
+                Renderer.hideModal();
+                this.resolveNormalEvent(0, 'random_move');
+            },
+
+            executeGeminiTeleport: function (steps, isReverse) {
+                Renderer.hideModal();
+                if (GameState.storyProgress[18] === 1) {
+                    GameState.storyProgress[18] = 2;
+                    Renderer.updateMapVisuals();
+                }
+
+                Renderer.logEvent(`✨ 雙子星發動引力，將大球${isReverse ? '向後' : '向前'}拋了 ${steps} 格！`, true);
+                setTimeout(() => {
+                    this.moveSteps(steps, 250, isReverse);
+                }, 300);
+            },
+
+            cancelGeminiTeleport: function () {
+                Renderer.hideModal();
+                if (GameState.storyProgress[18] === 1) {
+                    GameState.storyProgress[18] = 2;
+                    Renderer.updateMapVisuals();
+                }
+                this.endTurn();
+            },
+
+            activateVirgoQuiz: function () {
+                GameState.flags.virgoQuizActive = true;
+                this.renderStoryModal();
+            },
+
+            rejectVirgo: function () {
+                GameState.flags.virgoQuizActive = false;
+                Renderer.hideModal();
+                Renderer.logEvent(`大球決定不打擾角宿一，悄悄離開了。(無損失)`);
+                this.endTurn();
+            },
+
+            answerVirgo: function (isCorrect) {
+                GameState.flags.virgoQuizActive = false;
+
+                if (isCorrect) {
+                    GameState.storyProgress[26] = 1;
+                    Renderer.updateMapVisuals();
+                    this.gainItem('candy', 1);
+
+                    const desc = `
+                        <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-green-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                            <h4 class="text-green-400 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-green-500/30 pb-3">debug成功！</h4>
+                            <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">「太棒了！果然是因為引力變數溢位導致的！」<br><br>角宿一開心地塞給你 200 碎片，還有一顆閃閃發亮的星光糖果！</p>
+                        </div>
+                    `;
+                    const actions = `<button onclick="Renderer.hideModal(); GameLogic.modifyShards(200, () => GameLogic.endTurn())" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">收下獎勵 (+200 碎片)</button>`;
+                    Renderer.showModal("處女座", desc, "♍", actions, true);
+                } else {
+                    const desc = `
+                        <div class="bg-bg-gray-800/80 p-6 rounded-2xl border-2 border-red-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                            <h4 class="text-red-400 font-extrabold text-2xl mb-4 text-center tracking-wide w-full border-b border-red-500/30 pb-3">debug失敗...</h4>
+                            <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">「砰！」終端機冒出了黑煙... 幫倒忙了！<br><br>角宿一無奈地重新啟動系統，大球只好悄悄溜走。</p>
+                        </div>
+                    `;
+                    const actions = `<button onclick="Renderer.hideModal(); GameLogic.endTurn()" class="w-full bg-gray-600 hover:bg-gray-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-gray-500">下次再來 (+0 碎片)</button>`;
+                    Renderer.showModal("處女座", desc, "💥", actions, true);
+                }
+            },
+
+            rejectLeo: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`大球覺得這坑實在太深了，決定假裝沒看到悄悄離開。(無損失)`);
+                this.endTurn();
+            },
+
+            rescueLeo: function () {
+                Renderer.hideModal();
+
+                GameState.storyProgress[1] = 1;
+                Renderer.updateMapVisuals();
+
+                Renderer.logEvent(`大球大喊：「只要給我一個支點，我可以舉起整顆大球！」`, true);
+
+                setTimeout(() => {
+                    const desc = `
+                        <div class="bg-gray-800/80 p-6 rounded-2xl border-2 border-green-400/50 shadow-inner flex flex-col items-center justify-start w-full relative">
+                            <h4 class="text-green-400 font-extrabold text-2xl mb-4 border-b border-green-500/30 pb-3 w-full text-center tracking-wide">救援成功！</h4>
+                            <p class="text-gray-200 text-lg leading-relaxed text-left w-full px-2">大球找來了一根超長的星際建材作為槓桿，大喊著：<br><br><span class="text-yellow-300 font-bold">「只要給我一個支點，我可以舉起整顆大球！」</span><br><br>成功將五帝座一彈出坑洞！皇子為了表達感謝，贈送了豐厚的謝禮！</p>
+                        </div>
+                    `;
+                    const actions = `<button onclick="Renderer.hideModal(); GameLogic.modifyShards(200, () => GameLogic.endTurn())" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition mt-2 border border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.4)]">收下謝禮 (+200 碎片)</button>`;
+                    Renderer.showModal("獅子座", desc, "🦁", actions, true);
+                }, 400);
+            },
+
+            relaxAtCafe: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`☕ 大球決定先去恆星咖啡廳放鬆一下，喝了杯咖啡獲得 50 碎片，但簡報進度毫無進展...`, true);
+                this.modifyShards(50, () => {
+                    this.endTurn();
+                });
+            },
+
+            preparePresentation: function () {
+                Renderer.hideModal();
+                Renderer.logEvent(`💻 大球選擇熬夜準備「Merak16」的簡報！雖然花了 50 碎片買提神飲料，但終於趕上了！`, true);
+                this.modifyShards(-50, () => {
+                    GameState.storyProgress[27] = 2;
+                    Renderer.updateMapVisuals();
+                    this.endTurn();
+                });
+            },
+
+            resolveMultiStageEvent: function (proceed) {
+                const cell = this.currentStoryCell;
+                const eventData = this.currentStoryData;
+                const stageIndex = GameState.storyProgress[cell.id];
+                const maxStage = eventData.stages.length - 1;
+
+                const executedStageIndex = Math.min(stageIndex, maxStage);
+                const stageData = eventData.stages[executedStageIndex];
+
+                Renderer.hideModal();
+
+                if (proceed) {
+                    let finalAmt = this.applyRestedBuff(stageData.amt);
+
+                    if (stageData.rewardItem) {
+                        this.gainItem(stageData.rewardItem, 1);
+                    }
+
+                    if (GameState.storyProgress[cell.id] <= maxStage) {
+                        GameState.storyProgress[cell.id]++;
+                        Renderer.updateMapVisuals();
+                    }
+
+                    if (finalAmt !== 0) {
+                        let buffText = this.getBuffText(stageData.amt, finalAmt);
+                        if (buffText) Renderer.logEvent(`✨ 星輝斑斕影響：故事收支變動，獲得了加成！`);
+
+                        this.modifyShards(finalAmt, () => {
+                            this.endTurn();
+                        });
+                    } else {
+                        this.endTurn();
+                    }
+                } else {
+                    Renderer.logEvent(`大球決定先暫時觀望，沒有推進【${cell.name}】的故事。`);
+                    this.endTurn();
+                }
+            },
+
+            resolveNormalEvent: function (amt, special) {
+                Renderer.hideModal();
+
+                if (special === 'double_dice') {
+                    GameState.status.doubleDice = true;
+                }
+
+                this.modifyShards(amt, () => {
+                    if (special === 'random_move') {
+                        setTimeout(() => {
+                            const steps = Math.floor(Math.random() * 3) + 1;
+                            const isReverse = Math.random() > 0.5;
+                            Renderer.logEvent(`🌪️ 受到雙子星推擠，被強制${isReverse ? '後退' : '前進'} ${steps} 格！`, true);
+                            this.moveSteps(steps, 200, isReverse);
+                        }, 300);
+                    } else {
+                        this.endTurn();
+                    }
+                });
+            },
+
+            executeChanceCard: function (cell) {
+                let available = ChanceCards.filter(c => !GameState.chanceState.usedCardIds.includes(c.id));
+
+                let validPool = available.filter(c => {
+                    if (c.type === 'basic') return true;
+                    if (c.type === 'advanced' && GameState.chanceState.completedBasic > 0) return true;
+                    if (c.type === 'boss' && GameState.chanceState.completedAdvanced > 0) return true;
+                    return false;
+                });
+
+                if (validPool.length === 0) {
+                    GameState.chanceState.usedCardIds = [];
+                    available = ChanceCards;
+                    validPool = available.filter(c => {
+                        if (c.type === 'basic') return true;
+                        if (c.type === 'advanced' && GameState.chanceState.completedBasic > 0) return true;
+                        if (c.type === 'boss' && GameState.chanceState.completedAdvanced > 0) return true;
+                        return false;
+                    });
+                }
+
+                const card = validPool[Math.floor(Math.random() * validPool.length)];
+                GameState.chanceState.usedCardIds.push(card.id);
+                GameState.currentChanceCard = card;
+
+                let badge = '';
+                if (card.type === 'basic') badge = '<span class="text-green-400">【基礎題】</span>';
+                if (card.type === 'advanced') badge = '<span class="text-purple-400">【進階題】</span>';
+                if (card.type === 'boss') badge = '<span class="text-red-500 font-bold">【魔王題】</span>';
+
+                const desc = `
+                    <p class="text-yellow-300 font-bold text-xl mb-4 flex justify-between items-center">
+                        <span>請聊天室投票選擇！</span>
+                        <span>${badge}</span>
+                    </p>
+                    <p class="text-white text-2xl mb-8 bg-gray-800 p-6 rounded-xl border-2 border-gray-600 text-left leading-relaxed shadow-inner">${card.q}</p>
+                `;
+                const actions = `
+                    <div class="grid grid-cols-2 gap-4 w-full">
+                        <button onclick="GameLogic.resolveChanceCard('A')" class="bg-blue-600 hover:bg-blue-500 py-5 px-4 rounded-2xl font-bold transition text-xl leading-tight shadow-lg border border-blue-400">A: ${card.opts.A}</button>
+                        <button onclick="GameLogic.resolveChanceCard('B')" class="bg-pink-600 hover:bg-pink-500 py-5 px-4 rounded-2xl font-bold transition text-xl leading-tight shadow-lg border border-pink-400">B: ${card.opts.B}</button>
+                        <button onclick="GameLogic.resolveChanceCard('C')" class="bg-indigo-600 hover:bg-indigo-500 py-5 px-4 rounded-2xl font-bold transition text-xl leading-tight shadow-lg border border-indigo-400">C: ${card.opts.C}</button>
+                        <button onclick="GameLogic.resolveChanceCard('D')" class="bg-teal-600 hover:bg-teal-500 py-5 px-4 rounded-2xl font-bold transition text-xl leading-tight shadow-lg border border-teal-400">D: ${card.opts.D}</button>
+                    </div>
+                `;
+                Renderer.showModal("機會卡", desc, cell.icon, actions, true);
+            },
+
+            resolveChanceCard: function (choice) {
+                const card = GameState.currentChanceCard;
+                const isCorrect = choice === card.ans;
+                const baseAmt = isCorrect ? card.win : card.lose;
+                const finalAmt = this.applyRestedBuff(baseAmt);
+                const buffText = this.getBuffText(baseAmt, finalAmt);
+
+                if (isCorrect) {
+                    if (card.type === 'basic') GameState.chanceState.completedBasic++;
+                    if (card.type === 'advanced') GameState.chanceState.completedAdvanced++;
+                }
+
+                const resultDesc = `
+                    <p class="text-2xl mb-4 ${isCorrect ? 'text-green-400' : 'text-red-400'} font-bold">${isCorrect ? '✨ 選擇正確！' : '💦 選擇錯誤...'}</p>
+                    <p class="text-gray-200 text-xl mb-4">正確答案是：<span class="text-yellow-300 font-bold">${card.ans}: ${card.opts[card.ans]}</span></p>
+                    <p class='text-2xl ${finalAmt > 0 ? 'text-green-400' : 'text-red-400'} font-bold font-mono mt-3'>${finalAmt > 0 ? '+' : ''}${finalAmt} 碎片</p>
+                    ${buffText}
+                `;
+                const resultActions = `<button onclick="GameLogic.finishCard(${finalAmt})" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition shadow-lg">收下結果</button>`;
+                Renderer.showModal("卡片結算", resultDesc, isCorrect ? "🎉" : "📉", resultActions, true);
+            },
+
+            executeFateCard: function (cell) {
+                let available = FateCards.filter(c => !GameState.fateState.usedCardIds.includes(c.id));
+                if (available.length === 0) {
+                    GameState.fateState.usedCardIds = [];
+                    available = FateCards;
+                }
+                const card = available[Math.floor(Math.random() * available.length)];
+                GameState.fateState.usedCardIds.push(card.id);
+
+                let targetName = "";
+                let targetId = -1;
+                const zodiacs = [1, 5, 8, 10, 12, 15, 16, 18, 22, 24, 26, 27];
+                const landmarks = [2, 4, 9, 13, 20, 25];
+
+                if (card.id === 'f2' || card.id === 'f3') {
+                    targetId = zodiacs[Math.floor(Math.random() * zodiacs.length)];
+                    targetName = MapData.find(m => m.id === targetId).name;
+                } else if (card.id === 'f4') {
+                    targetId = landmarks[Math.floor(Math.random() * landmarks.length)];
+                    targetName = MapData.find(m => m.id === targetId).name;
+                }
+
+                const finalDesc = card.desc.replace('{target}', targetName ? `<span class="text-blue-300 font-bold">【${targetName}】</span>` : '');
+
+                const modalHtml = `
+                    <div class="bg-gray-800 p-6 rounded-xl border-2 border-purple-500 shadow-inner">
+                        <p class="text-gray-100 text-2xl leading-relaxed text-left">${finalDesc}</p>
+                    </div>
+                `;
+                const actions = `<button onclick="GameLogic.resolveFateCard('${card.id}', ${targetId})" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold text-xl transition shadow-lg">接受命運</button>`;
+
+                Renderer.showModal("命運卡", modalHtml, cell.icon, actions, true);
+            },
+
+            resolveFateCard: function (cardId, targetId) {
+                Renderer.hideModal();
+                const turn = GameState.currentTurn;
+
+                if (cardId === 'f1') {
+                    this.modifyShards(-200, () => {
+                        const steps = (14 - GameState.playerPos + 28) % 28;
+                        Renderer.logEvent(`🚀 啟動特別直播躍遷！支付 200 碎片，前往太陽系！`, true);
+                        this.moveSteps(steps, 100);
+                    });
+                    return;
+                }
+                else if (cardId === 'f2') {
+                    GameState.mapAttachments.push({ pos: targetId, type: 'shard', expireAt: turn + 6, amt: 200 });
+                    Renderer.logEvent(`⭐ 【${MapData.find(m => m.id === targetId).name}】出現了星光碎片！(5 回合內有效)`);
+                }
+                else if (cardId === 'f3') {
+                    const loss = Math.floor(Math.random() * 401) + 400;
+                    GameState.mapAttachments.push({ pos: targetId, type: 'blackhole', expireAt: turn + 6, amt: -loss });
+                    Renderer.logEvent(`🕳️ 【${MapData.find(m => m.id === targetId).name}】有恆星坍縮成了黑洞！(5 回合內有效)`);
+                }
+                else if (cardId === 'f4') {
+                    GameState.mapAttachments.push({ pos: targetId, type: 'shard', expireAt: turn + 6, amt: 200 });
+                    Renderer.logEvent(`🌌 宇宙旅遊周開始！【${MapData.find(m => m.id === targetId).name}】出現了特殊景觀碎片！(5 回合內有效)`);
+                }
+                else if (cardId === 'f5') {
+                    GameState.status.parkOpenAt = turn + 3;
+                    Renderer.logEvent(`💤 宇宙休息日到來！所有觀景區及恆星遊樂園閉園 2 回合！`, false);
+                }
+                else if (cardId === 'f6') {
+                    GameState.status.sickUntil = turn + 3;
+                    Renderer.logEvent(`🤒 大球生病了... 接下來 3 回合滾動速度下降！`, false);
+                }
+                else if (cardId === 'f7') {
+                    GameState.status.cheeseUntil = turn + 3;
+                    Renderer.logEvent(`🧀 大球吃了奶酪！接下來 3 回合精神超級好！`, true);
+                }
+
+                Renderer.updateMapVisuals();
+                this.endTurn();
+            },
+
+            finishCard: function (amt) {
+                Renderer.hideModal();
+                this.modifyShards(amt, () => {
+                    this.endTurn();
+                });
+            },
+
+            applyRestedBuff: function (baseAmt) {
+                if (!GameState.status.rested || baseAmt === 0) return baseAmt;
+                if (baseAmt > 0) return Math.floor(baseAmt * 1.5);
+                if (baseAmt < 0) return Math.floor(baseAmt * 0.5);
+            },
+
+            getBuffText: function (baseAmt, finalAmt) {
+                if (!GameState.status.rested || baseAmt === 0) return '';
+                GameState.status.rested = false;
+                Renderer.updateUIStats();
+                return `<p class="text-pink-300 text-lg mt-3 animate-pulse">✨ 星輝斑斕發動！原本 ${baseAmt} 變為 ${finalAmt}！</p>`;
+            },
+
+            closeCellModal: function () {
+                Renderer.hideModal();
+                this.endTurn();
+            },
+
+            endTurn: function () {
+                if (GameState.pendingBankModal) {
+                    GameState.pendingBankModal = false;
+                    setTimeout(() => this.showBankModal(), 300);
+                } else {
+                    this.checkVictoryCondition();
+                }
+            },
+
+            executeWormholeJump: function () {
+                Renderer.hideModal();
+                const jumpDice = Math.floor(Math.random() * 6) + 1;
+                const loseAmount = jumpDice * 50;
+                Renderer.logEvent(`⚠️ 遭遇蟲洞躍遷！擲出 ${jumpDice} 點，遺失 ${loseAmount} 碎片！強制傳送 ${jumpDice * 2} 格！`, true);
+
+                this.modifyShards(-loseAmount, () => {
+                    setTimeout(() => {
+                        this.moveSteps(jumpDice * 2, 80);
+                    }, 500);
+                });
+            },
+
+            resolveSolarSystem: function (id) {
+                Renderer.hideModal();
+                const opt = GameState.currentSolarOptions.find(o => o.id === id);
+
+                const isSuccess = Math.random() > 0.5;
+                const reward = isSuccess ? opt.winAmt : opt.loseAmt;
+                const message = isSuccess ? opt.success : opt.fail;
+
+                Renderer.logEvent(`📺 太陽系直播 [${opt.name}]：${message}`, true);
+
+                this.modifyShards(reward, () => {
+                    const resultDesc = `
+                        <p class="text-xl mb-4 ${isSuccess ? 'text-green-400' : 'text-red-400'} font-bold">${message}</p>
+                        <p class="text-gray-300 text-base">結算：<span class="${isSuccess ? 'text-yellow-400' : 'text-red-400'} font-mono">${isSuccess ? '+' : ''}${reward}</span> 碎片</p>
+                    `;
+                    const resultActions = `<button onclick="GameLogic.closeCellModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold text-lg transition">繼續</button>`;
+
+                    setTimeout(() => {
+                        Renderer.showModal(`${opt.name} 直播結束！`, resultDesc, isSuccess ? '🎉' : '💦', resultActions);
+                    }, 300);
+                });
+            },
+
+            calculateStockMarket: function () {
+                if (GameState.assets.invest <= 0) {
+                    return { message: "目前無投資，星際股市波動不影響資產。", diff: 0, type: 'normal' };
+                }
+
+                const r = Math.random();
+                let p = 0;
+                let message = "";
+                let type = 'normal';
+
+                if (r < 0.65) {
+                    p = (Math.random() * 0.2) - 0.05;
+                    if (p > 0.08) { message = "某行星發現了小型星光礦脈，星際股市平穩向上！"; type = 'good'; }
+                    else if (p < 0.0) { message = "航道遇到宇宙射線干擾，運輸成本微增，資產小幅縮水。"; type = 'bad'; }
+                    else { message = "星際市場交易平淡，各星系股市穩定盤整。"; type = 'normal'; }
+                } else if (r < 0.95) {
+                    const isUp = Math.random() > 0.5;
+                    if (isUp) {
+                        p = 0.15 + Math.random() * 0.1;
+                        message = "重大突破！研究團隊開發出超高效星光收集器，股市出現較大漲幅！";
+                        type = 'good';
+                    } else {
+                        p = -(0.05 + Math.random() * 0.1);
+                        message = "突發！鄰近星系爆發了小規模的隕石帶領地衝突，股市出現較大跌幅！";
+                        type = 'bad';
+                    }
+                } else {
+                    const isUp = Math.random() > 0.5;
+                    if (isUp) {
+                        p = 0.25 + Math.random() * 0.2;
+                        message = "🚀 史詩級利多！全新的黑洞能源汲取技術研發成功，全宇宙狂暴牛市來臨！";
+                        type = 'good';
+                    } else {
+                        p = -(0.15 + Math.random() * 0.2);
+                        message = "📉 災難性崩盤！爆發了波及多個星系的全面宇宙戰爭，星際經濟面臨嚴重衰退！";
+                        type = 'bad';
+                    }
+                }
+
+                const diff = Math.floor(GameState.assets.invest * p);
+                GameState.assets.invest += diff;
+                if (GameState.assets.invest < 0) GameState.assets.invest = 0;
+
+                return { message, diff, type };
+            },
+
+            showBankModal: function () {
+                let interest = 0;
+                if (GameState.assets.bank > 0) {
+                    interest = Math.floor(GameState.assets.bank * 0.05);
+                    GameState.assets.bank += interest;
+                }
+
+                const stockResult = this.calculateStockMarket();
+                Renderer.updateUIStats();
+
+                const bankDesc = `
+                    <p class="text-yellow-400 font-bold text-xl mb-3">「有一封星光銀行送來的信件...」</p>
+                    <p class="text-gray-200 text-base mb-3">親愛的客戶您好，現在為您開啟理財結算服務：</p>
+                    
+                    <div class="bg-gray-800 p-3 rounded-lg border border-gray-600 mb-4 text-left shadow-inner">
+                        ${interest > 0 ? `<p class="text-green-400 font-bold mb-2">🏦 發放定存利息：+${interest} 碎片</p>` : `<p class="text-gray-400 mb-2">🏦 無定存，本次無利息。</p>`}
+                        <div class="h-px bg-gray-600 my-2"></div>
+                        <p class="text-indigo-300 font-bold mb-1">📈 股市狀況回報：</p>
+                        <p class="${stockResult.type === 'good' ? 'text-green-400' : (stockResult.type === 'bad' ? 'text-red-400' : 'text-gray-300')} text-sm">
+                            ${stockResult.message}
+                        </p>
+                        ${stockResult.diff !== 0 ? `<p class="font-mono text-sm mt-1 ${stockResult.diff > 0 ? 'text-green-400' : 'text-red-400'}">${stockResult.diff > 0 ? '+' : ''}${stockResult.diff} 碎片</p>` : ''}
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 text-center mb-2 bg-indigo-900/50 py-3 rounded-lg border border-indigo-500/50">
+                        <div>
+                            <div class="text-pink-300 font-bold text-sm">手邊現金</div>
+                            <div class="font-mono text-yellow-300 text-xl font-bold" id="bank-modal-cash">${GameState.assets.hand.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div class="text-indigo-300 font-bold text-sm">銀行定存</div>
+                            <div class="font-mono text-white text-xl font-bold" id="bank-modal-bank">${GameState.assets.bank.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div class="text-teal-300 font-bold text-sm">投資現值</div>
+                            <div class="font-mono text-white text-xl font-bold" id="bank-modal-invest">${GameState.assets.invest.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+
+                const bankActions = `
+                    <div class="flex flex-col space-y-3 w-full">
+                        <label class="text-sm text-gray-300 text-left">重新分配資產 (輸入數量)：</label>
+                        <div class="flex items-center space-x-2 bg-gray-800 p-2 rounded border border-gray-600">
+                            <span class="text-indigo-300 font-bold w-12 text-center">定存</span>
+                            <input type="number" id="bank-input" class="w-1/3 p-2 bg-gray-900 border border-gray-500 rounded text-white text-center font-mono text-sm" placeholder="數量">
+                            <button onclick="GameLogic.reallocateAsset('bank', 'deposit')" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-2 rounded text-white font-bold transition text-sm">存入</button>
+                            <button onclick="GameLogic.reallocateAsset('bank', 'withdraw')" class="flex-1 bg-gray-600 hover:bg-gray-500 py-2 rounded text-white font-bold transition text-sm">提領</button>
+                        </div>
+                        <div class="flex items-center space-x-2 bg-gray-800 p-2 rounded border border-gray-600">
+                            <span class="text-teal-300 font-bold w-12 text-center">投資</span>
+                            <input type="number" id="invest-input" class="w-1/3 p-2 bg-gray-900 border border-gray-500 rounded text-white text-center font-mono text-sm" placeholder="數量">
+                            <button onclick="GameLogic.reallocateAsset('invest', 'deposit')" class="flex-1 bg-teal-600 hover:bg-teal-500 py-2 rounded text-white font-bold transition text-sm">買進</button>
+                            <button onclick="GameLogic.reallocateAsset('invest', 'withdraw')" class="flex-1 bg-gray-600 hover:bg-gray-500 py-2 rounded text-white font-bold transition text-sm">賣出</button>
+                        </div>
+                        
+                        <div id="bank-modal-log" class="text-sm h-6 flex items-center justify-center font-bold"></div>
+                        
+                        <button onclick="GameLogic.closeBankModal()" class="w-full bg-indigo-500 hover:bg-indigo-400 py-3 rounded-xl mt-2 font-bold transition border border-indigo-400 shadow-lg">確認並結束回合</button>
+                    </div>
+                `;
+                Renderer.showModal("星光銀行對帳單", bankDesc, "🏦", bankActions);
+            },
+
+            closeBankModal: function () {
+                Renderer.hideModal();
+                this.checkVictoryCondition();
+            },
+
+            reallocateAsset: function (type, action) {
+                const inputEl = document.getElementById(type + '-input');
+                const logEl = document.getElementById('bank-modal-log');
+                const cashEl = document.getElementById('bank-modal-cash');
+                const typeEl = document.getElementById('bank-modal-' + type);
+
+                if (!inputEl || !logEl || !cashEl || !typeEl) return;
+
+                const amount = parseInt(inputEl.value);
+                if (isNaN(amount) || amount <= 0) {
+                    logEl.innerText = "❌ 操作失敗：請輸入大於 0 的有效數字";
+                    logEl.className = "text-red-400 text-sm h-6 flex items-center justify-center font-bold";
+                    return;
+                }
+
+                if (action === 'deposit') {
+                    if (GameState.assets.hand < amount) {
+                        logEl.innerText = "❌ 操作失敗：手邊現金不足";
+                        logEl.className = "text-red-400 text-sm h-6 flex items-center justify-center font-bold";
+                        return;
+                    }
+                    GameState.assets.hand -= amount;
+                    GameState.assets[type] += amount;
+                    logEl.innerText = `✅ 成功存入 ${amount} 碎片至${type === 'bank' ? '銀行定存' : '投資現值'}`;
+                    logEl.className = "text-green-400 text-sm h-6 flex items-center justify-center font-bold";
+                } else if (action === 'withdraw') {
+                    if (GameState.assets[type] < amount) {
+                        logEl.innerText = `❌ 操作失敗：${type === 'bank' ? '定存' : '投資'}餘額不足`;
+                        logEl.className = "text-red-400 text-sm h-6 flex items-center justify-center font-bold";
+                        return;
+                    }
+                    GameState.assets[type] -= amount;
+                    GameState.assets.hand += amount;
+                    logEl.innerText = `✅ 成功從${type === 'bank' ? '銀行定存' : '投資現值'}提領 ${amount} 碎片`;
+                    logEl.className = "text-green-400 text-sm h-6 flex items-center justify-center font-bold";
+                }
+
+                Renderer.updateUIStats();
+                cashEl.innerText = GameState.assets.hand.toLocaleString();
+                typeEl.innerText = GameState.assets[type].toLocaleString();
+                inputEl.value = '';
+            },
+
+            modifyShards: function (amount, callback) {
+                if (amount === 0) {
+                    if (callback) callback();
+                    return;
+                }
+
+                GameState.assets.hand += amount;
+                Renderer.updateUIStats();
+
+                const total = GameState.assets.hand + GameState.assets.bank + GameState.assets.invest;
+                if (total <= 0) {
+                    Renderer.hideModal();
+                    this.forceLose();
+                    return;
+                }
+
+                if (GameState.assets.hand < 0) {
+                    this._debtResolvedCallback = callback;
+                    this.renderDebtModal();
+                } else {
+                    if (callback) {
+                        callback();
+                    }
+                }
+            },
+
+            renderDebtModal: function () {
+                const bankBal = GameState.assets.bank;
+                const investBal = GameState.assets.invest;
+                const debt = Math.abs(GameState.assets.hand);
+
+                const desc = `
+                    <p class="text-red-400 font-bold text-2xl mb-3">破產危機！手邊現金為負數！</p>
+                    <p class="text-gray-200 text-lg mb-4">大球目前負債 <span class="text-red-400 font-mono font-bold">${debt} 碎片</span>，必須立刻變賣銀行定存或投資現值來償還債務，否則將宣告破產！</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 text-center mb-4">
+                        <div class="bg-gray-800 p-3 rounded-lg border border-gray-600">
+                            <div class="text-indigo-300 font-bold text-sm">銀行定存餘額</div>
+                            <div class="font-mono text-white text-xl font-bold">${bankBal.toLocaleString()}</div>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded-lg border border-gray-600">
+                            <div class="text-teal-300 font-bold text-sm">投資現值餘額</div>
+                            <div class="font-mono text-white text-xl font-bold">${investBal.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+
+                let actions = `<div class="flex flex-col space-y-3 w-full">`;
+
+                if (bankBal >= debt) {
+                    actions += `<button onclick="GameLogic.resolveDebt('bank')" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold transition">解約銀行定存來還債</button>`;
+                }
+                if (investBal >= debt) {
+                    actions += `<button onclick="GameLogic.resolveDebt('invest')" class="w-full bg-teal-600 hover:bg-teal-500 py-3 rounded-xl font-bold transition">賣出投資現值來還債</button>`;
+                }
+                if (bankBal + investBal >= debt && bankBal < debt && investBal < debt) {
+                    actions += `<button onclick="GameLogic.resolveDebt('both')" class="w-full bg-purple-600 hover:bg-purple-500 py-3 rounded-xl font-bold transition">全數變賣以償還債務</button>`;
+                }
+
+                actions += `</div>`;
+                Renderer.showModal("警告：債務危機", desc, "🚨", actions);
+            },
+
+            resolveDebt: function (method) {
+                const debt = Math.abs(GameState.assets.hand);
+                if (method === 'bank') {
+                    GameState.assets.bank -= debt;
+                    GameState.assets.hand = 0;
+                    Renderer.logEvent(`🏦 大球緊急解約了銀行定存，成功償還了 ${debt} 碎片的債務！`, false);
+                } else if (method === 'invest') {
+                    GameState.assets.invest -= debt;
+                    GameState.assets.hand = 0;
+                    Renderer.logEvent(`📈 大球緊急賣出了投資現值，成功償還了 ${debt} 碎片的債務！`, false);
+                } else if (method === 'both') {
+                    const remDebt = debt - GameState.assets.bank;
+                    GameState.assets.bank = 0;
+                    GameState.assets.invest -= remDebt;
+                    GameState.assets.hand = 0;
+                    Renderer.logEvent(`🚨 大球變賣了所有定存與部分投資，驚險償還了 ${debt} 碎片的債務！`, false);
+                }
+
+                Renderer.updateUIStats();
+                Renderer.hideModal();
+                if (this._debtResolvedCallback) {
+                    this._debtResolvedCallback();
+                    this._debtResolvedCallback = null;
+                }
+            },
+
+            checkVictoryCondition: function () {
+                const total = GameState.assets.hand + GameState.assets.bank + GameState.assets.invest;
+                if (total >= GameState.assets.target && GameState.playerPos !== 14) {
+                    Renderer.logEvent("💡 總資產已達標！快前往【太陽系】舉辦派對吧！", true);
+                }
+            },
+
+            forceWin: function () {
+                Renderer.showFullScreenImage('win');
+            },
+
+            forceLose: function () {
+                Renderer.showFullScreenImage('lose');
+            },
+
+            // 💡 新增的重置邏輯
+            resetGame: function () {
+                // 1. 重置除了 interaction (觀眾名單) 以外的所有狀態
+                GameState.currentTurn = 1;
+                GameState.playerPos = 0;
+                GameState.isMoving = false;
+                GameState.passedStart = false;
+                GameState.pendingBankModal = false;
+                GameState.pendingPulsarModal = false;
+                GameState.currentSolarOptions = [];
+                GameState.nextFixedDice = null;
+
+                GameState.status = { rested: false, doubleDice: false, sickUntil: 0, cheeseUntil: 0, parkOpenAt: 0 };
+                GameState.stats = { totalRolls: 0, totalLoops: 0 };
+                GameState.mapAttachments = [];
+                GameState.chanceState = { completedBasic: 0, completedAdvanced: 0, usedCardIds: [] };
+                GameState.fateState = { usedCardIds: [] };
+
+                // 資產清空，現金與目標會在主選單按下開始時重新賦值
+                GameState.assets.bank = 0;
+                GameState.assets.invest = 0;
+
+                GameState.storyProgress = {};
+                GameState.inventory = {};
+                GameState.flags = {
+                    virgoQuizActive: false, pulsarEnergy: 5, pulsarBadEnding: false,
+                    pulsarGoodEnding: false, rewardedPulsar: false, rewardedCancer: false,
+                    rewardedVega: false, rewardedGemini: false
+                };
+
+                // 2. 重置畫面 UI
+                Renderer.updatePlayerPosition(0);
+                Renderer.updateMapVisuals();
+                Renderer.updateInventory();
+                Renderer.updateUIStats();
+
+                // 清空 Log
+                const logContainer = document.getElementById('event-log-container');
+                if (logContainer) {
+                    logContainer.innerHTML = '<div id="log-spacer" class="flex-grow"></div><p class="text-gray-400 text-xs lg:text-sm text-center" id="event-log-placeholder">等待大球擲骰子出發...</p>';
+                }
+
+                // 3. 呼叫主選單重新顯示
+                MainMenu.showMenu();
+            }
+        };
+
+        /**
+         * 模組 4：主選單與遊戲初始化控制
+         */
+        const MainMenu = {
+            selectedInitial: 1000,
+            selectedTarget: 100000,
+
+            setInitial: function (value, btnEl) {
+                this.selectedInitial = value;
+                // 重置所有初始金額按鈕的樣式
+                document.querySelectorAll('.menu-btn-initial').forEach(btn => {
+                    btn.className = "menu-btn-initial bg-gray-700 border-2 border-gray-600 hover:border-indigo-400 text-gray-300 font-bold py-3 rounded-lg transition";
+                });
+                // 點亮被選中的按鈕
+                btnEl.className = "menu-btn-initial bg-indigo-600 border-2 border-indigo-400 text-white font-bold py-3 rounded-lg shadow-[0_0_10px_rgba(99,102,241,0.5)] transition";
+            },
+
+            setTarget: function (value, btnEl) {
+                this.selectedTarget = value;
+                // 重置所有目標金額按鈕的樣式
+                document.querySelectorAll('.menu-btn-target').forEach(btn => {
+                    btn.className = "menu-btn-target bg-gray-700 border-2 border-gray-600 hover:border-pink-400 text-gray-300 font-bold py-3 rounded-lg transition";
+                });
+                // 點亮被選中的按鈕
+                btnEl.className = "menu-btn-target bg-pink-600 border-2 border-pink-400 text-white font-bold py-3 rounded-lg shadow-[0_0_10px_rgba(236,72,153,0.5)] transition";
+            },
+
+            startGame: function () {
+                // 1. 將玩家選好的設定寫入系統狀態
+                GameState.assets.hand = this.selectedInitial;
+                GameState.assets.target = this.selectedTarget;
+
+                // 2. 刷新左側儀表板顯示的數字
+                Renderer.updateUIStats();
+
+                // 3. 隱藏主選單，露出後方的遊戲畫面
+                const menuEl = document.getElementById('main-menu');
+                menuEl.classList.add('opacity-0'); // 加入淡出動畫
+                setTimeout(() => {
+                    menuEl.classList.add('hidden');
+                }, 300); // 配合 CSS transition 等待 0.3 秒後徹底隱藏
+
+                Renderer.logEvent(`🚀 遊戲開始！目標金額：${this.selectedTarget.toLocaleString()} 碎片`, true);
+            },
+
+            showMenu: function () {
+                const menuEl = document.getElementById('main-menu');
+                menuEl.classList.remove('hidden');
+                // 稍微延遲以確保 display:block 生效後再移去透明度，讓淡入動畫滑順
+                setTimeout(() => {
+                    menuEl.classList.remove('opacity-0');
+                }, 10);
+            }
+        };
+
+        window.onload = () => {
+            Renderer.initBoard();
+            Renderer.updateUIStats();
+
+            window.addEventListener('resize', () => {
+                Renderer.updatePlayerPosition(GameState.playerPos);
+            });
+        };
+    </script>
+</body>
+
+</html>
