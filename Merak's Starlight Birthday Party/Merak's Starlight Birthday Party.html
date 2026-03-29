@@ -328,7 +328,7 @@
                             </div>
                             <div class="pl-8 text-gray-200 text-sm xl:text-base leading-relaxed">
                                 實況主為您登錄簽到，大球即可獲得 <span class="text-yellow-400 font-bold">+50 碎片</span>！<br>
-                                <span class="text-gray-400 text-xs xl:text-sm mt-1 inline-block">(※ 每位伴星限領一次)</span>
+                                <span class="text-gray-400 text-xs xl:text-sm mt-1 inline-block">(※ 每位觀眾限領一次)</span>
                             </div>
                         </li>
                         <li class="flex flex-col">
@@ -338,7 +338,7 @@
                             </div>
                             <div class="pl-8 text-gray-200 text-sm xl:text-base leading-relaxed">
                                 化身宇宙引力！幫助大球趨吉避凶，可直接 <span class="text-pink-300 font-bold">指定大球下一步的點數 (1~6)</span>！<br>
-                                <span class="text-gray-400 text-xs xl:text-sm mt-1 inline-block">(※ 每位伴星限控骰 2 次，第 3
+                                <span class="text-gray-400 text-xs xl:text-sm mt-1 inline-block">(※ 每位觀眾限控骰 2 次，第 3
                                     次為純支持無效果)</span>
                             </div>
                         </li>
@@ -896,6 +896,7 @@
         ];
 
         // 機會卡庫
+        // 'A': 5, 'B': 5, 'C': 5, 'D': 4
         const ChanceCards = [
             { id: 'b1', type: 'basic', q: '天璇「沒有」開過以下哪一種企劃？', opts: { A: 'Verilog解題', B: '圍棋實戰', C: '鋼琴雜談', D: '歌回' }, ans: 'D', win: 300, lose: -300 },
             { id: 'b2', type: 'basic', q: '截至2026/03/24為止，天璇的Tetrio最高曾經到達過哪個段位？', opts: { A: 'S+', B: 'SS', C: 'U', D: 'X' }, ans: 'C', win: 300, lose: -300 },
@@ -906,11 +907,13 @@
             { id: 'b7', type: 'basic', q: '請問以下哪一個是天璇5.0新衣裝Live2D的可開關配件？', opts: { A: '外套', B: '護目鏡', C: '星星髮飾', D: '呆毛' }, ans: 'B', win: 300, lose: -300 },
             { id: 'b8', type: 'basic', q: '請問在天璇唬爛ChatGPT的直播中，天璇表示當時光緒皇帝是用以下哪個材料開發數位電路的？', opts: { A: '火柴', B: '絲綢', C: '蠟燭', D: '箭矢' }, ans: 'C', win: 300, lose: -300 },
             { id: 'b9', type: 'basic', q: '請問下列哪種「不是」天璇討厭的食物？', opts: { A: '芋頭', B: '香菜', C: '羊肉', D: '芹菜' }, ans: 'A', win: 300, lose: -300 },
+            { id: 'b10', type: 'basic', q: '請問下列哪一首原創曲初次發布時是「純鋼琴曲」的形式？', opts: { A: '雪國舊事', B: '點墨圖', C: '紫微垣', D: '橘的故事' }, ans: 'A', win: 300, lose: -300 },
             { id: 'a1', type: 'advanced', q: '下列哪一首原創曲「沒有」出現在2024天璇鋼琴獨奏會最後的原創組曲中？', opts: { A: '天璇的直播BGM', B: '十二調輪璇曲', C: '夢冬邊境', D: '上面三首全部都有出現' }, ans: 'C', win: 500, lose: -500 },
             { id: 'a2', type: 'advanced', q: '以下哪位繪師/伴星畫過最多天璇的圖？(包含大球主題圖)', opts: { A: '玻璃姬', B: '白詰草', C: '悠糸', D: '蒼曜' }, ans: 'D', win: 500, lose: -500 },
             { id: 'a3', type: 'advanced', q: '請問以下哪個圍棋開局是天璇最常用的？', opts: { A: '雙星位開局', B: '星小目開局', C: '錯小目開局', D: '星三三開局' }, ans: 'B', win: 500, lose: -500 },
             { id: 'a4', type: 'advanced', q: '請問以下哪個程式語言或硬體描述語言天璇「從來沒有」寫過？', opts: { A: 'VHDL', B: 'Java', C: 'Python', D: 'Verilog' }, ans: 'A', win: 500, lose: -500 },
             { id: 'a5', type: 'advanced', q: '請問下列哪一張插圖「不是」由天璇親自繪製的？', opts: { A: '500訂閱賀圖', B: '2022情人節賀圖', C: '2023情人節賀圖', D: '以上三張都是天璇畫的' }, ans: 'C', win: 500, lose: -500 },
+            { id: 'a6', type: 'advanced', q: '請問截至2026/03/24為止，下列哪一種俄羅斯方塊開局「不是」天璇常用的？', opts: { A: 'TKI-3', B: 'DT cannon', C: 'MS2', D: 'extended SDPC' }, ans: 'B', win: 500, lose: -500 },
             { id: 'm1', type: 'boss', q: '請將下列原創曲發布日期，由早排到晚<br>(1) 夏夜星舞<br>(2) 晨露映照的世界<br>(3) 天市垣<br>(4) 星冕', opts: { A: '1、2、3、4', B: '3、4、2、1', C: '4、3、2、1', D: '4、3、1、2' }, ans: 'B', win: 800, lose: -800 },
             { id: 'm2', type: 'boss', q: '請問截至2026/03/24為止，下列哪一項物品，「沒有」在蒼曜所繪製的「大球進食」系列圖中，被大球啃食過？', opts: { A: '盤子', B: '月球', C: 'Youtube商標', D: '俄羅斯方塊' }, ans: 'A', win: 800, lose: -800 },
             { id: 'm3', type: 'boss', q: '請問下列哪個架構或觀念，不是天璇在2021年聖誕節計算機組織speed run時分享的主要內容？', opts: { A: 'single cycle CPU', B: '5 stage pipelined CPU', C: 'out of order execution', D: 'memory hierarchy' }, ans: 'C', win: 800, lose: -800 }
@@ -1383,13 +1386,13 @@
                 if (!name) return;
 
                 if (GameState.interaction.signedInUsers.includes(name)) {
-                    Renderer.logEvent(`⚠️ 伴星 [${name}] 已經簽到過了，無法重複領取獎勵！`, false);
+                    Renderer.logEvent(`⚠️ 觀眾 [${name}] 已經簽到過了，無法重複領取獎勵！`, false);
                     input.value = '';
                     return;
                 }
 
                 GameState.interaction.signedInUsers.push(name);
-                Renderer.logEvent(`📝 感謝伴星 [${name}] 簽到為大球充能！獲得 50 碎片！`, true);
+                Renderer.logEvent(`📝 感謝觀眾 [${name}] 簽到為大球充能！獲得 50 碎片！`, true);
                 this.modifyShards(50);
                 input.value = '';
             },
@@ -1399,7 +1402,7 @@
                 const amountInput = document.getElementById('donate-amount');
                 const diceInput = document.getElementById('donate-dice');
 
-                const name = nameInput.value.trim() || '神秘的伴星';
+                const name = nameInput.value.trim() || '神秘的觀眾';
                 const amount = parseInt(amountInput ? amountInput.value : 0) || 50;
                 const dice = parseInt(diceInput.value);
 
